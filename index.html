@@ -196,7 +196,7 @@ const ASSET_TYPES = [
 
 // -------- utils ---------
 const fmtYen = n => new Intl.NumberFormat('ja-JP', {maximumFractionDigits:0}).format(Math.round(n||0));
-const parseYen = v => (v||'').toString().replace(/[\s,]/g,'').trim()===''?NaN:Number((v||'').toString().replace(/[\s,]/g,''));
+const parseYen = v => { if(v==null) return NaN; const s=String(v); let out=''; for(let i=0;i<s.length;i++){ const c=s[i]; if((c>='0'&&c<='9')||c==='.'||c==='-'){ out+=c; } } return out.trim()===''?NaN:Number(out); };
 const endOfMonth = (y,m)=> new Date(y, m, 0); // m:1-12
 function monthsInUse(start, fyeMonth){
   if(!(start instanceof Date) || isNaN(start)){return 12}
@@ -270,11 +270,11 @@ function buildSchedule({price, life, method, startDate, fyeMonth, smeCap}){
     let switched=false; let revisedBase=null;
     for(let k=1;k<=years;k++){
       const months = (k===1? firstMonths:12);
-      // スイッチ判定（フル年ベースで判定）
+      // スイッチ判定を“当期の月割額”で比較（調整前償却額 vs 償却保証額）
       if(!switched){
-        const dbFull = open * rate;           // 定率フル年
-        const guarantee = price * gRate;      // 保証額フル年
-        if(dbFull < guarantee){ switched = true; revisedBase = open; }
+        const dbAmt = open * rate * (months/12);
+        const gAmt  = price * gRate * (months/12);
+        if(dbAmt < gAmt){ switched = true; revisedBase = open; }
       }
       let dep=0; let memo='';
       if(switched){
@@ -284,11 +284,14 @@ function buildSchedule({price, life, method, startDate, fyeMonth, smeCap}){
         dep = open * rate * (months/12);
         memo = '定率法（200%）';
       }
-      if(k===years){ dep = Math.max(0, open - 1); memo += '（最終調整）'; }
-      acc += dep; let close = open - dep; if(close<1) close=1;
+      // 最終年または1円割れ防止調整
+      if(k===years){ dep = Math.min(dep, Math.max(0, open - 1)); memo += '（最終調整）'; }
+      const close = Math.max(1, open - dep);
+      const accPrev = rows.length? rows[rows.length-1].acc : 0;
+      const acc = accPrev + dep;
       rows.push({period:k, open, dep, months:months+"/12", acc, close, memo});
       open = close;
-      if(close<=1.0) break;
+      if(close<=1) break;
     }
     return rows;
   }
@@ -302,7 +305,7 @@ function toCSV(rows){
   rows.forEach(r=>{
     lines.push([r.period, Math.round(r.open), Math.round(r.dep), r.months, Math.round(r.acc), Math.round(r.close), r.memo].join(','));
   });
-  return new Blob([lines.join('
+  return new Blob(["﻿"+lines.join('
 ')],{type:'text/csv;charset=utf-8;'});
 }
 
