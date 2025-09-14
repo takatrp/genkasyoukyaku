@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>減価償却費 試算ツール r1+（率表内蔵・プリセット）</title>
+<style>
+  :root{
+    --bg:#f7f8fa;--card:#ffffff;--ink:#0f172a;--muted:#475569;--line:#e5e7eb;--accent:#578899;
+  }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif;}
+  .wrap{max-width:860px;margin:0 auto;padding:12px;}
+  .card{background:var(--card);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.04);padding:14px 14px 10px;border:1px solid var(--line);}  
+  h1{font-size:18px;margin:0 0 8px 0;letter-spacing:.2px}
+  .sub{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .grid{display:grid;grid-template-columns:1fr;gap:10px}
+  @media(min-width:640px){.grid{grid-template-columns:1fr 1fr}}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+  input,select,button{width:100%;box-sizing:border-box;padding:12px 11px;border-radius:12px;border:1px solid var(--line);font-size:16px;background:#fff}
+  input:focus,select:focus{outline:2px solid rgba(87,136,153,.25)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .note{font-size:12px;color:var(--muted);line-height:1.5}
+  .btn{background:var(--accent);color:#fff;border:none;font-weight:600}
+  .btn:active{transform:translateY(1px)}
+  table{border-collapse:collapse;width:100%;font-size:13px;background:#fff;border-radius:12px;overflow:hidden}
+  th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right}
+  th{position:sticky;top:0;background:#f0f5f7;color:#0b2230;text-align:right}
+  th:first-child, td:first-child{text-align:left}
+  .scroll-x{overflow-x:auto;border-radius:12px;border:1px solid var(--line)}
+  .tag{display:inline-block;font-size:11px;background:#eef6fa;color:#195067;border:1px solid #d7e6ee;border-radius:999px;padding:2px 8px;margin-right:6px}
+  footer{font-size:11px;color:var(--muted);margin-top:14px}
+  .inline{display:flex;gap:10px;align-items:center}
+  .warn{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:8px 10px;border-radius:10px;font-size:12px}
+  .ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:8px 10px;border-radius:10px;font-size:12px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>減価償却費 試算ツール <span class="tag">r1+</span><span class="tag">率表内蔵</span><span class="tag">プリセット</span></h1>
+      <div class="sub">r1のUIを維持しつつ、<strong>国税庁「償却率等表（200%定率）」</strong>を内蔵。保証額・改定償却率まで自動判定／主要科目プリセットで耐用年数を自動セット。</div>
+      <div class="grid">
+        <div>
+          <label>資産タイプ（主要科目プリセット）</label>
+          <select id="assetType"></select>
+        </div>
+        <div>
+          <label>取得価額（円）</label>
+          <input id="price" inputmode="numeric" placeholder="例）1,200,000" />
+        </div>
+        <div>
+          <label>耐用年数（年）</label>
+          <input id="life" type="number" min="1" step="1" placeholder="例）5" />
+        </div>
+        <div>
+          <label>償却方法</label>
+          <select id="method">
+            <option value="sl">定額法</option>
+            <option value="db200">定率法（200%・保証額/改定率スイッチ）</option>
+            <option value="ikkatsu">一括償却（20万円未満/3年均等）</option>
+            <option value="sme300">少額（30万円未満）特例：即時償却（中小企業者等のみ）</option>
+            <option value="lt100">10万円未満：即時償却（全事業者）</option>
+          </select>
+        </div>
+        <div>
+          <label>事業の用に供した日</label>
+          <input id="startDate" type="date" />
+        </div>
+        <div>
+          <label>決算月（期末は毎年「月末」）</label>
+          <select id="fye"></select>
+        </div>
+        <div>
+          <label>中小企業者等の30万円特例「当期の残枠」（円）<span style="color:#64748b">※該当時のみ</span></label>
+          <input id="smeCap" inputmode="numeric" placeholder="例）3,000,000（初期値）" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn" id="run">計算する</button>
+        <button id="csvBtn">CSVダウンロード</button>
+      </div>
+      <div id="msg" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="sub">計算結果</div>
+      <div id="summary" class="ok" style="display:none"></div>
+      <div class="scroll-x" style="margin-top:10px">
+        <table id="tbl" aria-label="償却スケジュール">
+          <thead>
+            <tr>
+              <th>期</th>
+              <th>期首帳簿価額</th>
+              <th>償却費</th>
+              <th>月割係数</th>
+              <th>累計償却額</th>
+              <th>期末帳簿価額</th>
+              <th>備考</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <footer>
+        <div class="note">
+          ・定率法（200%）は<strong>償却率・改定償却率・保証率</strong>を表に基づき適用し、保証額未達期から改定取得価額×改定償却率で<strong>毎年同額</strong>に切替。<br/>
+          ・期末は各年の決算月末。初年度は使用月数/12で按分（いわゆる月割）。最終年は<strong>1円残し</strong>で調整。<br/>
+          ・プリセット耐用年数は代表例。正式な年数は国税庁「主な耐用年数表」をご確認ください。<br/>
+          ・本ツールは簡易試算です。申告前は制度・率を原典で検算してください。
+        </div>
+        <div style="margin-top:8px" class="note">© Matsumoto Kaikei / r1+（率表内蔵版）</div>
+      </footer>
+    </div>
+  </div>
+
+<script>
+// ===== 国税庁「償却率等表（200%定率）」の内蔵値 =====
+// values: {rate: 定率法の償却率, revised: 改定償却率, guarantee: 保証率}
+const RATE200 = {
+  2:{rate:1.000,revised:1.000,guarantee:0.00000},
+  3:{rate:0.667,revised:1.000,guarantee:0.11089},
+  4:{rate:0.500,revised:1.000,guarantee:0.12499},
+  5:{rate:0.400,revised:0.500,guarantee:0.10800},
+  6:{rate:0.333,revised:0.334,guarantee:0.09911},
+  7:{rate:0.286,revised:0.334,guarantee:0.08680},
+  8:{rate:0.250,revised:0.334,guarantee:0.07909},
+  9:{rate:0.222,revised:0.250,guarantee:0.07126},
+ 10:{rate:0.200,revised:0.250,guarantee:0.06552},
+ 11:{rate:0.182,revised:0.200,guarantee:0.05992},
+ 12:{rate:0.167,revised:0.200,guarantee:0.05566},
+ 13:{rate:0.154,revised:0.167,guarantee:0.05180},
+ 14:{rate:0.143,revised:0.167,guarantee:0.04854},
+ 15:{rate:0.133,revised:0.143,guarantee:0.04565},
+ 16:{rate:0.125,revised:0.143,guarantee:0.04294},
+ 17:{rate:0.118,revised:0.125,guarantee:0.04038},
+ 18:{rate:0.111,revised:0.112,guarantee:0.03884},
+ 19:{rate:0.105,revised:0.112,guarantee:0.03693},
+ 20:{rate:0.100,revised:0.112,guarantee:0.03486},
+ 21:{rate:0.095,revised:0.100,guarantee:0.03335},
+ 22:{rate:0.091,revised:0.100,guarantee:0.03182},
+ 23:{rate:0.087,revised:0.091,guarantee:0.03052},
+ 24:{rate:0.083,revised:0.084,guarantee:0.02969},
+ 25:{rate:0.080,revised:0.084,guarantee:0.02841},
+ 26:{rate:0.077,revised:0.084,guarantee:0.02716},
+ 27:{rate:0.074,revised:0.077,guarantee:0.02624},
+ 28:{rate:0.071,revised:0.072,guarantee:0.02568},
+ 29:{rate:0.069,revised:0.072,guarantee:0.02463},
+ 30:{rate:0.067,revised:0.072,guarantee:0.02366},
+ 31:{rate:0.065,revised:0.067,guarantee:0.02286},
+ 32:{rate:0.063,revised:0.067,guarantee:0.02216},
+ 33:{rate:0.061,revised:0.063,guarantee:0.02161},
+ 34:{rate:0.059,revised:0.063,guarantee:0.02097},
+ 35:{rate:0.057,revised:0.059,guarantee:0.02051},
+ 36:{rate:0.056,revised:0.059,guarantee:0.01974},
+ 37:{rate:0.054,revised:0.056,guarantee:0.01950},
+ 38:{rate:0.053,revised:0.056,guarantee:0.01882},
+ 39:{rate:0.051,revised:0.053,guarantee:0.01860},
+ 40:{rate:0.050,revised:0.053,guarantee:0.01791},
+ 41:{rate:0.049,revised:0.050,guarantee:0.01741},
+ 42:{rate:0.048,revised:0.050,guarantee:0.01694},
+ 43:{rate:0.047,revised:0.048,guarantee:0.01664},
+ 44:{rate:0.045,revised:0.046,guarantee:0.01664},
+ 45:{rate:0.044,revised:0.046,guarantee:0.01634},
+ 46:{rate:0.043,revised:0.044,guarantee:0.01601},
+ 47:{rate:0.043,revised:0.044,guarantee:0.01532},
+ 48:{rate:0.042,revised:0.044,guarantee:0.01499},
+ 49:{rate:0.041,revised:0.042,guarantee:0.01475},
+ 50:{rate:0.040,revised:0.042,guarantee:0.01440},
+ 51:{rate:0.040,revised:0.050,guarantee:0.01053},
+ 52:{rate:0.040,revised:0.050,guarantee:0.01036},
+ 53:{rate:0.039,revised:0.048,guarantee:0.01028},
+ 54:{rate:0.039,revised:0.048,guarantee:0.01015},
+ 55:{rate:0.039,revised:0.046,guarantee:0.01007},
+ 56:{rate:0.038,revised:0.046,guarantee:0.00961},
+ 57:{rate:0.038,revised:0.046,guarantee:0.00952},
+  58:{rate:0.038,revised:0.044,guarantee:0.00945},
+  59:{rate:0.037,revised:0.044,guarantee:0.00934},
+  60:{rate:0.037,revised:0.044,guarantee:0.00895}
+};
+
+// 主要耐用年数プリセット（代表例）
+// 参考：国税庁「主な減価償却資産の耐用年数表」
+const ASSET_TYPES = [
+  {label:'（直接入力）', life:null},
+  {label:'パソコン（電子計算機・PC）', life:4},
+  {label:'サーバ（電子計算機のうち）', life:5},
+  {label:'複合機・プリンタ（事務用機器）', life:5},
+  {label:'工具・器具備品（一般）', life:5},
+  {label:'普通乗用車（一般）', life:6},
+  {label:'軽自動車等', life:4},
+  {label:'トラック（小型）', life:5},
+  {label:'事務机・椅子等（什器備品）', life:8},
+  {label:'建物附属設備（事務所等）', life:15},
+  {label:'ソフトウェア（自社利用）', life:5}
+];
+
+// -------- utils ---------
+const fmtYen = n => new Intl.NumberFormat('ja-JP', {maximumFractionDigits:0}).format(Math.round(n||0));
+const parseYen = v => (v||'').toString().replace(/[\s,]/g,'').trim()===''?NaN:Number((v||'').toString().replace(/[\s,]/g,''));
+const endOfMonth = (y,m)=> new Date(y, m, 0); // m:1-12
+function monthsInUse(start, fyeMonth){
+  if(!(start instanceof Date) || isNaN(start)){return 12}
+  const y = start.getFullYear();
+  let fyEndYear = start.getMonth()+1 <= fyeMonth ? y : y+1;
+  const last = endOfMonth(fyEndYear, fyeMonth);
+  let months = (fyEndYear - y)*12 + (fyeMonth - (start.getMonth()+1)) + 1;
+  return Math.max(0, Math.min(12, months));
+}
+function addYears(date, years){ const d = new Date(date); d.setFullYear(d.getFullYear()+years); return d; }
+
+function buildSchedule({price, life, method, startDate, fyeMonth, smeCap}){
+  const rows=[];
+  let note='';
+  const start = startDate;
+  const firstMonths = monthsInUse(start, fyeMonth);
+
+  // 即時償却（10万円未満）
+  if(method==='lt100' && price<100000){
+    rows.push({period:1, open:price, dep:price, months:`${firstMonths}/12`, acc:price, close:1, memo:'10万円未満 即時償却'});
+    return rows;
+  }
+
+  // 30万円特例（中小企業者等）
+  if(method==='sme300' && price<300000){
+    const use = Math.min(price, Math.max(0, smeCap||3000000));
+    const rem = price - use;
+    rows.push({period:1, open:price, dep:use, months:`—`, acc:use, close:Math.max(1, price-use), memo:'30万円特例（中小企業者等）即時償却'});
+    if(rem<=0){ rows[0].close = 1; return rows; }
+    note = '特例超過分は定額法で残額償却（保守的）';
+    method='sl'; price = rem;
+  }
+
+  // 一括償却（20万円未満/3年均等）
+  if(method==='ikkatsu'){
+    const split = price/3;
+    const years = 3; let acc=0; let open=price; let close=price;
+    for(let k=1;k<=years;k++){
+      const months = (k===1? firstMonths:12)+''+'/12';
+      const dep = split * (k===1? firstMonths/12 : 1);
+      acc += dep; close -= dep; if(close<1) close=1;
+      rows.push({period:k, open:open, dep, months, acc, close, memo:'一括償却（均等）'});
+      open = close;
+    }
+    return rows;
+  }
+
+  // 通常（定額 or 200%定率）
+  const years = Math.max(1, life|0);
+  let open = price; let acc=0;
+
+  if(method==='sl'){
+    const rate = 1/years;
+    for(let k=1;k<=years;k++){
+      const months = (k===1? firstMonths:12);
+      let dep = price*rate*(months/12);
+      if(k===years){ // 最終調整：1円残し
+        dep = Math.max(0, open - 1);
+      }
+      acc += dep; let close = open - dep; if(close<1) close=1;
+      rows.push({period:k, open, dep, months:months+"/12", acc, close, memo:'定額法'});
+      open = close;
+      if(close<=1.0) break;
+    }
+    return rows;
+  }
+
+  if(method==='db200'){
+    const rInfo = RATE200[years] || {rate: 2/years, revised: 1/Math.max(1,years), guarantee: 0};
+    const rate = rInfo.rate; const gRate = rInfo.guarantee; const fixRate = rInfo.revised;
+    let switched=false; let revisedBase=null;
+    for(let k=1;k<=years;k++){
+      const months = (k===1? firstMonths:12);
+      // スイッチ判定（フル年ベースで判定）
+      if(!switched){
+        const dbFull = open * rate;           // 定率フル年
+        const guarantee = price * gRate;      // 保証額フル年
+        if(dbFull < guarantee){ switched = true; revisedBase = open; }
+      }
+      let dep=0; let memo='';
+      if(switched){
+        dep = revisedBase * fixRate * (months/12);
+        memo = '改定償却率（毎年同額）';
+      }else{
+        dep = open * rate * (months/12);
+        memo = '定率法（200%）';
+      }
+      if(k===years){ dep = Math.max(0, open - 1); memo += '（最終調整）'; }
+      acc += dep; let close = open - dep; if(close<1) close=1;
+      rows.push({period:k, open, dep, months:months+"/12", acc, close, memo});
+      open = close;
+      if(close<=1.0) break;
+    }
+    return rows;
+  }
+
+  return rows;
+}
+
+function toCSV(rows){
+  const header = ['期','期首帳簿価額','償却費','月割係数','累計償却額','期末帳簿価額','備考'];
+  const lines = [header.join(',')];
+  rows.forEach(r=>{
+    lines.push([r.period, Math.round(r.open), Math.round(r.dep), r.months, Math.round(r.acc), Math.round(r.close), r.memo].join(','));
+  });
+  return new Blob([lines.join('
+')],{type:'text/csv;charset=utf-8;'});
+}
+
+function render(rows){
+  const tbody = document.querySelector('#tbl tbody');
+  tbody.innerHTML = '';
+  let firstDep = rows[0]?.dep||0;
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td style="text-align:left">${r.period}</td>
+      <td>¥${fmtYen(r.open)}</td>
+      <td><strong>¥${fmtYen(r.dep)}</strong></td>
+      <td>${r.months}</td>
+      <td>¥${fmtYen(r.acc)}</td>
+      <td>¥${fmtYen(r.close)}</td>
+      <td style="text-align:left;color:#334155">${r.memo||''}</td>`;
+    tbody.appendChild(tr);
+  });
+  const sum = rows.reduce((s,r)=>s+r.dep,0);
+  const msg = `初年度償却費：¥${fmtYen(firstDep)} ／ 総償却費：¥${fmtYen(sum)}（端数調整後）`;
+  const box=document.getElementById('summary');
+  box.textContent=msg; box.style.display='block';
+}
+
+function go(){
+  const price = parseYen(document.getElementById('price').value);
+  const life  = Number(document.getElementById('life').value);
+  const method= document.getElementById('method').value;
+  const smeCap= parseYen(document.getElementById('smeCap').value || '3000000');
+  const fyeMonth= Number(document.getElementById('fye').value);
+  const sdRaw = document.getElementById('startDate').value;
+  const startDate = sdRaw? new Date(sdRaw+'T00:00:00') : null;
+
+  const msg = document.getElementById('msg');
+  msg.innerHTML='';
+  if(!price||isNaN(price)||price<=0){ msg.innerHTML='<div class="warn">取得価額を入力してください。</div>'; return; }
+  if(['sl','db200'].includes(method) && (!life||isNaN(life)||life<=0)){
+    msg.innerHTML='<div class="warn">耐用年数（年）を入力してください。</div>'; return;
+  }
+  if(!startDate){ msg.innerHTML='<div class="warn">「事業の用に供した日」を入力してください（初年度の月割に使用します）。</div>'; return; }
+
+  const rows = buildSchedule({price, life, method, startDate, fyeMonth, smeCap});
+  render(rows);
+
+  // enable csv download
+  const blob = toCSV(rows);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='depreciation_schedule.csv';
+  const btn=document.getElementById('csvBtn');
+  btn.onclick=()=>a.click();
+}
+
+document.getElementById('run').addEventListener('click', go);
+
+// UX: auto-format currency
+['price','smeCap'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('blur',()=>{ const n=parseYen(el.value); if(!isNaN(n)) el.value=fmtYen(n); });
+});
+
+// 決算月/資産タイプ 初期化
+(function init(){
+  const fyeSel=document.getElementById('fye');
+  for(let m=1;m<=12;m++){
+    const op=document.createElement('option'); op.value=m; op.textContent=m+'月'; if(m===3) op.selected=true; fyeSel.appendChild(op);
+  }
+  const atSel=document.getElementById('assetType');
+  ASSET_TYPES.forEach((x,i)=>{ const op=document.createElement('option'); op.value=i; op.textContent=x.label + (x.life?`（${x.life}年）`:'' ); atSel.appendChild(op); });
+  atSel.addEventListener('change',()=>{ const v=ASSET_TYPES[Number(atSel.value)]; if(v&&v.life){ document.getElementById('life').value=v.life; }});
+})();
+</script>
+</body>
+</html>
