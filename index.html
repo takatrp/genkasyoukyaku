@@ -148,7 +148,7 @@
     </div>
 
     <footer class="site">
-      Copyright (c) 2025 <a class="footlink" href="https://www.matsumoto-kaikei.or.jp/">税理士法人松本会計事務所</a> All Rights Reserved. / r◯
+      Copyright (c) 2025 <a class="footlink" href="https://www.matsumoto-kaikei.or.jp/">税理士法人松本会計事務所</a> All Rights Reserved. / r3
     </footer>
   </div>
 
@@ -265,6 +265,20 @@ function usedLifeSimplified(baseLife, elapsedYears){
   }
   if(L < 2) L = 2; // 最低2年
   return L;
+}
+
+// 中古（簡便法）の計算過程を表示用に整形
+function formatUsedDetail(N, E, L){
+  if(!(Number.isFinite(N)&&Number.isFinite(E)&&Number.isFinite(L))) return '';
+  if(E >= N){
+    const raw = N*0.2; const flo = Math.floor(raw);
+    const minApplied = L>flo ? ' → 下限2年適用' : '';
+    return `${N}×0.2=${raw.toFixed(1)} → 切捨て${flo}年${minApplied}`;
+  } else {
+    const a = (N-E); const b = 0.2*E; const sum = a + b; const flo = Math.floor(sum);
+    const minApplied = L>flo ? ' → 下限2年適用' : '';
+    return `(${N}−${E}) + 0.2×${E} = ${a.toFixed(0)} + ${b.toFixed(1)} = ${sum.toFixed(1)} → 切捨て${flo}年${minApplied}`;
+  }
 }
 
 function buildSchedule({price, life, method, startDate, fyeMonth, smeCap}){
@@ -395,18 +409,18 @@ function go(){
   }
   if(!startDate){ msg.innerHTML='<div class="warn">「事業の用に供した日」を入力してください（初年度の月割に使用します）。</div>'; return; }
 
-  let effectiveLife = baseLife; let usedNote='';
+  let effectiveLife = baseLife; let usedNote=''; let EVal = null;
   if(usedFlag){
     if(capOver50){
       msg.innerHTML='<div class="warn">取得後に使用のための資本的支出が取得価額の50％超の場合、簡便法は適用できません（基準耐用年数で計算）。</div>';
     }else{
-      let E = !isNaN(elapsedInput) && elapsedInput>0 ? Math.floor(elapsedInput) : yearsFloorDiffByMonth(firstUseMonth, startDate);
-      if(isNaN(E)){
+      EVal = (!isNaN(elapsedInput) && elapsedInput>0) ? Math.floor(elapsedInput) : yearsFloorDiffByMonth(firstUseMonth, startDate);
+      if(isNaN(EVal)){
         msg.innerHTML='<div class="warn">中古（簡便法）を適用する場合は、「経過年数」または「初度・製造年月」を入力してください。</div>';
         return;
       }
-      effectiveLife = usedLifeSimplified(baseLife, E);
-      usedNote = `中古（簡便法）: 元${baseLife}年・経過${E}年 → 見積耐用年数 ${effectiveLife}年`;
+      effectiveLife = usedLifeSimplified(baseLife, EVal);
+      usedNote = `中古（簡便法）: 元${baseLife}年・経過${EVal}年 → 見積耐用年数 ${effectiveLife}年`;
     }
   }
 
@@ -415,7 +429,9 @@ function go(){
 
   if(usedNote){
     const box=document.getElementById('summary');
-    box.textContent = box.textContent + ' ／ ' + usedNote;
+    const prevText = box.textContent;
+    const detail = formatUsedDetail(baseLife, EVal, effectiveLife);
+    box.innerHTML = prevText + ' ／ ' + usedNote + '<br><span class="note">中古（簡便法）計算過程: ' + detail + '</span>';
   }
 
   const blob = toCSV(rows);
