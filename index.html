@@ -18,7 +18,7 @@
   .grid{display:grid;grid-template-columns:1fr;gap:10px}
   @media(min-width:640px){.grid{grid-template-columns:1fr 1fr}}
   label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
-  input,select,button{width:100%;box-sizing:border-box;padding:12px 11px;border-radius:12px;border:1px solid var(--line);font-size:16px;background:#fff}
+  input,select,button{width:100%;box-sizing:border-box;padding:12px 11px;border-radius:12px;border:1px solid var(--line);font-size:16px;background:#fff;pointer-events:auto}
   input:focus,select:focus{outline:2px solid rgba(87,136,153,.25)}
   input::placeholder{color:#9aa4b2;opacity:1}
   .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
@@ -139,7 +139,7 @@
     </div>
 
     <footer class="site">
-      Copyright (c) 2025 <a class="footlink" href="https://www.matsumoto-kaikei.or.jp/">税理士法人松本会計事務所</a> All Rights Reserved. / r3
+      Copyright (c) 2025 <a class="footlink" href="https://www.matsumoto-kaikei.or.jp/">税理士法人松本会計事務所</a> All Rights Reserved. / r4
     </footer>
   </div>
 
@@ -431,17 +431,30 @@ document.getElementById('printBtn').addEventListener('click', ()=> window.print(
 
 ['price'].forEach(id=>{
   const el=document.getElementById(id);
-  const formatNow=()=>{ const n=parseYen(el.value); if(!isNaN(n)){ el.value=fmtYen(n); try{ el.setSelectionRange(el.value.length, el.value.length);}catch(_){} } };
+  let composing=false;
+  const formatNow=()=>{
+    if(composing) return;
+    const n=parseYen(el.value);
+    if(!isNaN(n)){
+      el.value=fmtYen(n);
+      try{ el.setSelectionRange(el.value.length, el.value.length);}catch(_){/*noop*/}
+    }
+  };
+  el.addEventListener('compositionstart', ()=> composing=true);
+  el.addEventListener('compositionend', ()=> { composing=false; formatNow(); });
   el.addEventListener('input', formatNow);
   el.addEventListener('blur', formatNow);
 });
 
-(function init(){
+document.addEventListener('DOMContentLoaded', init);
+function init(){
   const fyeSel=document.getElementById('fye');
+  fyeSel.innerHTML='';
   for(let m=1;m<=12;m++){
     const op=document.createElement('option'); op.value=m; op.textContent=m+'月'; if(m===3) op.selected=true; fyeSel.appendChild(op);
   }
   const atSel=document.getElementById('assetType');
+  atSel.innerHTML='';
   ASSET_TYPES.forEach((x,i)=>{ const op=document.createElement('option'); op.value=i; op.textContent=x.label + (x.life?`（${x.life}年）`:'' ); atSel.appendChild(op); });
   atSel.addEventListener('change',()=>{ const v=ASSET_TYPES[Number(atSel.value)]; if(v&&v.life){ document.getElementById('life').value=v.life; } syncSoftwareRules(); });
 
@@ -453,7 +466,7 @@ document.getElementById('printBtn').addEventListener('click', ()=> window.print(
   toggleUsed();
 
   syncSoftwareRules();
-})();
+}
 
 function isSoftwareSelected(){
   const atSel=document.getElementById('assetType');
