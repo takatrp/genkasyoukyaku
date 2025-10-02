@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="ja">
 <head>
@@ -28,7 +29,7 @@
   .btn:active{transform:translateY(1px)}
   table{border-collapse:collapse;width:100%;font-size:13px;background:#fff;border-radius:12px;overflow:hidden}
   th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right}
-  th{position:sticky;top:0;background:#f0f5f7;color:#0b2230;text-align:right}
+  th{position:sticky;top:0;background:#f0f5f7;color:#0b2230;text-align:right;font-size:12px;white-space:nowrap}
   th:first-child,td:first-child{text-align:left}
   .scroll-x{overflow-x:auto;border-radius:12px;border:1px solid var(--line)}
   .chart-wrap{position:relative;height:280px}
@@ -40,7 +41,7 @@
   a.footlink{color:inherit !important;text-decoration:underline}
   .warn{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:8px 10px;border-radius:10px;font-size:12px}
   .ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:8px 10px;border-radius:10px;font-size:12px}
-  @media print{ body{background:#fff} .no-print{display:none !重要} .card{box-shadow:none;border:0} .scroll-x{overflow:visible;border:0} th{position:static} }
+  @media print{ body{background:#fff} .no-print{display:none !important} .card{box-shadow:none;border:0} .scroll-x{overflow:visible;border:0} th{position:static} }
   /* chips */
   .chipbar{display:flex;gap:6px;align-items:center;flex-wrap:nowrap}
   .chip{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;background:#fff;cursor:pointer;user-select:none;white-space:nowrap}
@@ -100,7 +101,7 @@
         </div>
         <div>
           <label>初年度月数</label>
-          <input id="m1" type="number" min="1" max="12" step="1" placeholder="1〜12" />
+          <input id="m1" type="number" min="1" max="12" step="1" placeholder="1〜12" / value="12">
         </div>
         <div>
           <label>端数処理（表示額）</label>
@@ -127,7 +128,7 @@
       <div id="usedEst" class="ok" style="display:none;margin-top:8px"></div>
       <div class="row no-print" style="margin-top:8px">
         <button class="btn" id="run">計算する</button>
-        <button id="csvBtn">CSVダウンロード</button>
+        <button id="csvBtn">CSV</button>
         <button id="printBtn">印刷</button>
       </div>
       <div id="msg" style="margin-top:10px"></div>
@@ -144,7 +145,6 @@
               <th>期首帳簿価額</th>
               <th>償却費</th>
               <th>月数</th>
-              <th>累計償却額</th>
               <th>期末帳簿価額</th>
               <th>備考</th>
             </tr>
@@ -177,7 +177,7 @@
     </div>
 
     <footer class="site">
-      Copyright (c) 2025 <a class="footlink" href="https://www.matsumoto-kaikei.or.jp/">税理士法人松本会計事務所</a> All Rights Reserved. / r11
+      Copyright (c) 2025 <a class="footlink" href="https://www.matsumoto-kaikei.or.jp/">税理士法人松本会計事務所</a> All Rights Reserved. / r13
     </footer>
   </div>
 
@@ -224,11 +224,19 @@ function buildSchedule({price, life, method, m1Override=null, intangible=false})
 
 function getRoundingMode(){ const on=document.querySelector('#roundingChips .chip-on'); return on? on.dataset.val : 'floor'; }
 
-function toCSV(rows){ const mode=getRoundingMode(); const header = ['期','期首帳簿価額','償却費','月数','累計償却額','期末帳簿価額','備考']; const lines = [header.join(',')]; let acc=0; rows.forEach(r=>{ const d=roundByMode(r.dep,mode); acc+=d; const o=roundByMode(r.open,mode); const c=roundByMode(r.close,mode); lines.push([r.period, o, d, r.monthsInt, acc, c, r.memo].join(',')); }); return new Blob(["\uFEFF" + lines.join('\n')], {type:'text/csv;charset=utf-8;'}); }
+function toCSV(rows){ const mode=getRoundingMode(); const header = ['期','期首帳簿価額','償却費','月数','期末帳簿価額','備考']; const lines = [header.join(',')]; const salvageDisp = isSoftwareSelected()?0:1; rows.forEach(r=>{ const o=roundByMode(r.open,mode); const d=roundByMode(r.dep,mode); let c=o-d; c = Math.max(salvageDisp, c); lines.push([r.period, o, d, r.monthsInt, c, r.memo].join(',')); }); return new Blob(["﻿" + lines.join('
+')], {type:'text/csv;charset=utf-8;'}); }); return new Blob(["\uFEFF" + lines.join('\n')], {type:'text/csv;charset=utf-8;'}); }
 
 function render(rows){
-  const mode=getRoundingMode(); const tbody = document.querySelector('#tbl tbody'); tbody.innerHTML = ''; let firstDep = rows[0]?.dep||0; let dispAcc=0; const dispOpen=[]; const dispDep=[];
-  rows.forEach(r=>{ const o=roundByMode(r.open,mode); const d=roundByMode(r.dep,mode); const c=roundByMode(r.close,mode); dispOpen.push(o); dispDep.push(d); dispAcc+=d; const tr = document.createElement('tr'); tr.innerHTML = `<td style="text-align:left">${r.period}</td>
+  const mode=getRoundingMode(); const tbody = document.querySelector('#tbl tbody'); tbody.innerHTML = ''; let firstDep = rows[0]?.dep||0; const dispOpen=[]; const dispDep=[];
+  const salvageDisp = isSoftwareSelected()?0:1;
+  rows.forEach(r=>{ const o=roundByMode(r.open,mode); const d=roundByMode(r.dep,mode); let c=o-d; c = Math.max(salvageDisp, c); dispOpen.push(o); dispDep.push(d); const tr = document.createElement('tr'); tr.innerHTML = `<td style="text-align:left">${r.period}</td>
+      <td>¥${fmtYen(o)}</td>
+      <td><strong>¥${fmtYen(d)}</strong></td>
+      <td>${r.monthsInt}</td>
+      <td>¥${fmtYen(c)}</td>
+      <td style="text-align:left;color:#334155">${r.memo||''}</td>`; tbody.appendChild(tr); });
+  const sum = dispDep.reduce((s,x)=>s+x,0); const box=document.getElementById('summary'); box.textContent=`初年度償却費：¥${fmtYen(roundByMode(firstDep,mode))} ／ 総償却費：¥${fmtYen(sum)}（端数:${mode}）`; box.style.display='block'; lastRows = rows; lastDisp = {open:dispOpen, dep:dispDep}; renderChart(); }</td>
       <td>¥${fmtYen(o)}</td>
       <td><strong>¥${fmtYen(d)}</strong></td>
       <td>${r.monthsInt}</td>
