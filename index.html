@@ -6,7 +6,7 @@
 <title>減価償却費 試算ツール</title>
 <link rel="icon" type="image/png" sizes="192x192" href="favicon192192.png" />
 <style>
-  :root{ --bg:#f7f8fa; --card:#ffffff; --ink:#0f172a; --muted:#475569; --line:#e5e7eb; --accent:#578899; --bar1:#bcd7ea; --bar2:#f7c8c8; --lineStrong:#195067; --chipOnBg:#e6f0f4; --chipOnBd:#cfe0e6; --chipOnInk:#174a5a; }
+  :root{ --bg:#f7f8fa; --card:#ffffff; --ink:#0f172a; --muted:#475569; --line:#e5e7eb; --accent:#578899; --bar1:#bcd7ea; --bar2:#f7c8c8; --chipOnBg:#e6f0f4; --chipOnBd:#cfe0e6; --chipOnInk:#174a5a; }
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif}
   .wrap{max-width:900px;margin:0 auto;padding:12px}
   .card{background:var(--card);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.04);padding:14px 14px 10px;border:1px solid var(--line)}
@@ -19,7 +19,6 @@
   @media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
   label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
   input,select,button{width:100%;box-sizing:border-box;padding:12px 11px;border-radius:12px;border:1px solid var(--line);font-size:16px;background:#fff}
-  input:focus,select:focus{outline:2px solid rgba(87,136,153,.25)}
   input::placeholder{color:#a3acb8;opacity:1}
   .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   .note{font-size:12px;color:var(--muted);line-height:1.5}
@@ -33,7 +32,7 @@
   .scroll-x{overflow-x:auto;border-radius:12px;border:1px solid var(--line)}
   .chart-wrap{position:relative;height:280px}
   canvas#chart{width:100%;height:100%;display:block}
-  .legend{position:absolute;right:8px;top:6px;background:#ffffffcc;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-size:11px;color:#334155}
+  .legend{position:absolute;right:8px;top:6px;background:#ffffffcc;border:1px solid #e2e8f0;border-radius:10px;padding:6px 8px;font-size:11px;color:#334155}
   .legend-item{display:flex;align-items:center;gap:6px;margin:3px 0}
   .swatch{width:10px;height:10px;border-radius:3px;border:1px solid #94a3b8}
   footer.site{font-size:11px;color:var(--muted);margin-top:14px;text-align:center}
@@ -100,7 +99,7 @@
         </div>
         <div>
           <label>初年度月数</label>
-          <input id="m1" type="number" min="1" max="12" step="1" placeholder="1〜12" / value="12">
+          <input id="m1" type="number" min="1" max="12" step="1" value="12" placeholder="1〜12" />
         </div>
         <div>
           <label>端数処理（表示額）</label>
@@ -176,11 +175,12 @@
     </div>
 
     <footer class="site">
-      Copyright (c) 2025 <a class="footlink" href="https://www.matsumoto-kaikei.or.jp/">税理士法人松本会計事務所</a> All Rights Reserved. / r13
+      Copyright (c) 2025 <a class="footlink" href="https://www.matsumoto-kaikei.or.jp/">税理士法人松本会計事務所</a> All Rights Reserved. / r14
     </footer>
   </div>
 
 <script>
+'use strict';
 // ===== 国税庁「償却率等表（200%定率）」の内蔵値 =====
 const RATE200 = { 2:{rate:1.000,revised:1.000,guarantee:0.00000}, 3:{rate:0.667,revised:1.000,guarantee:0.11089}, 4:{rate:0.500,revised:1.000,guarantee:0.12499}, 5:{rate:0.400,revised:0.500,guarantee:0.10800}, 6:{rate:0.333,revised:0.334,guarantee:0.09911}, 7:{rate:0.286,revised:0.334,guarantee:0.08680}, 8:{rate:0.250,revised:0.334,guarantee:0.07909}, 9:{rate:0.222,revised:0.250,guarantee:0.07126}, 10:{rate:0.200,revised:0.250,guarantee:0.06552}, 11:{rate:0.182,revised:0.200,guarantee:0.05992}, 12:{rate:0.167,revised:0.200,guarantee:0.05566}, 13:{rate:0.154,revised:0.167,guarantee:0.05180}, 14:{rate:0.143,revised:0.167,guarantee:0.04854}, 15:{rate:0.133,revised:0.143,guarantee:0.04565}, 16:{rate:0.125,revised:0.143,guarantee:0.04294}, 17:{rate:0.118,revised:0.125,guarantee:0.04038}, 18:{rate:0.111,revised:0.112,guarantee:0.03884}, 19:{rate:0.105,revised:0.112,guarantee:0.03693}, 20:{rate:0.100,revised:0.112,guarantee:0.03486}, 21:{rate:0.095,revised:0.100,guarantee:0.03335}, 22:{rate:0.091,revised:0.100,guarantee:0.03182}, 23:{rate:0.087,revised:0.091,guarantee:0.03052}, 24:{rate:0.083,revised:0.084,guarantee:0.02969}, 25:{rate:0.080,revised:0.084,guarantee:0.02841}, 26:{rate:0.077,revised:0.084,guarantee:0.02716}, 27:{rate:0.074,revised:0.077,guarantee:0.02624}, 28:{rate:0.071,revised:0.072,guarantee:0.02568}, 29:{rate:0.069,revised:0.072,guarantee:0.02463}, 30:{rate:0.067,revised:0.072,guarantee:0.02366}, 31:{rate:0.065,revised:0.067,guarantee:0.02286}, 32:{rate:0.063,revised:0.067,guarantee:0.02216}, 33:{rate:0.061,revised:0.063,guarantee:0.02161}, 34:{rate:0.059,revised:0.063,guarantee:0.02097}, 35:{rate:0.057,revised:0.059,guarantee:0.02051}, 36:{rate:0.056,revised:0.059,guarantee:0.01974}, 37:{rate:0.054,revised:0.056,guarantee:0.01950}, 38:{rate:0.053,revised:0.056,guarantee:0.01882}, 39:{rate:0.051,revised:0.053,guarantee:0.01860}, 40:{rate:0.050,revised:0.053,guarantee:0.01791}, 41:{rate:0.049,revised:0.050,guarantee:0.01741}, 42:{rate:0.048,revised:0.050,guarantee:0.01694}, 43:{rate:0.047,revised:0.048,guarantee:0.01664}, 44:{rate:0.045,revised:0.046,guarantee:0.01664}, 45:{rate:0.044,revised:0.046,guarantee:0.01634}, 46:{rate:0.043,revised:0.044,guarantee:0.01601}, 47:{rate:0.043,revised:0.044,guarantee:0.01532}, 48:{rate:0.042,revised:0.044,guarantee:0.01499}, 49:{rate:0.041,revised:0.042,guarantee:0.01475}, 50:{rate:0.040,revised:0.042,guarantee:0.01440}, 51:{rate:0.040,revised:0.050,guarantee:0.01053}, 52:{rate:0.040,revised:0.050,guarantee:0.01036}, 53:{rate:0.039,revised:0.048,guarantee:0.01028}, 54:{rate:0.039,revised:0.048,guarantee:0.01015}, 55:{rate:0.039,revised:0.046,guarantee:0.01007}, 56:{rate:0.038,revised:0.046,guarantee:0.00961}, 57:{rate:0.038,revised:0.046,guarantee:0.00952}, 58:{rate:0.038,revised:0.044,guarantee:0.00945}, 59:{rate:0.037,revised:0.044,guarantee:0.00934}, 60:{rate:0.037,revised:0.044,guarantee:0.00895} };
 
@@ -223,8 +223,7 @@ function buildSchedule({price, life, method, m1Override=null, intangible=false})
 
 function getRoundingMode(){ const on=document.querySelector('#roundingChips .chip-on'); return on? on.dataset.val : 'floor'; }
 
-function toCSV(rows){ const mode=getRoundingMode(); const header = ['期','期首帳簿価額','償却費','月数','期末帳簿価額','備考']; const lines = [header.join(',')]; const salvageDisp = isSoftwareSelected()?0:1; rows.forEach(r=>{ const o=roundByMode(r.open,mode); const d=roundByMode(r.dep,mode); let c=o-d; c = Math.max(salvageDisp, c); lines.push([r.period, o, d, r.monthsInt, c, r.memo].join(',')); }); return new Blob(["﻿" + lines.join('
-')], {type:'text/csv;charset=utf-8;'}); }); return new Blob(["\uFEFF" + lines.join('\n')], {type:'text/csv;charset=utf-8;'}); }
+function toCSV(rows){ const mode=getRoundingMode(); const header = ['期','期首帳簿価額','償却費','月数','期末帳簿価額','備考']; const lines = [header.join(',')]; const salvageDisp = isSoftwareSelected()?0:1; rows.forEach(r=>{ const o=roundByMode(r.open,mode); const d=roundByMode(r.dep,mode); let c=o-d; c = Math.max(salvageDisp, c); lines.push([r.period, o, d, r.monthsInt, c, r.memo].join(',')); }); return new Blob(["\uFEFF" + lines.join('\n')], {type:'text/csv;charset=utf-8;'}); }
 
 function render(rows){
   const mode=getRoundingMode(); const tbody = document.querySelector('#tbl tbody'); tbody.innerHTML = ''; let firstDep = rows[0]?.dep||0; const dispOpen=[]; const dispDep=[];
@@ -233,13 +232,6 @@ function render(rows){
       <td>¥${fmtYen(o)}</td>
       <td><strong>¥${fmtYen(d)}</strong></td>
       <td>${r.monthsInt}</td>
-      <td>¥${fmtYen(c)}</td>
-      <td style="text-align:left;color:#334155">${r.memo||''}</td>`; tbody.appendChild(tr); });
-  const sum = dispDep.reduce((s,x)=>s+x,0); const box=document.getElementById('summary'); box.textContent=`初年度償却費：¥${fmtYen(roundByMode(firstDep,mode))} ／ 総償却費：¥${fmtYen(sum)}（端数:${mode}）`; box.style.display='block'; lastRows = rows; lastDisp = {open:dispOpen, dep:dispDep}; renderChart(); }</td>
-      <td>¥${fmtYen(o)}</td>
-      <td><strong>¥${fmtYen(d)}</strong></td>
-      <td>${r.monthsInt}</td>
-      <td>¥${fmtYen(dispAcc)}</td>
       <td>¥${fmtYen(c)}</td>
       <td style="text-align:left;color:#334155">${r.memo||''}</td>`; tbody.appendChild(tr); });
   const sum = dispDep.reduce((s,x)=>s+x,0); const box=document.getElementById('summary'); box.textContent=`初年度償却費：¥${fmtYen(roundByMode(firstDep,mode))} ／ 総償却費：¥${fmtYen(sum)}（端数:${mode}）`; box.style.display='block'; lastRows = rows; lastDisp = {open:dispOpen, dep:dispDep}; renderChart(); }
@@ -260,7 +252,7 @@ function renderChart(){ const canvas = document.getElementById('chart'); if(!can
 }
 window.addEventListener('resize', renderChart);
 
-function isSoftwareSelected(){ const atSel=document.getElementById('assetType'); const v=ASSET_TYPES[Number(atSel.value)]; return !!(v && /ソフトウェア/.test(v.label)); }
+function isSoftwareSelected(){ const atSel=document.getElementById('assetType'); const idx = Number(atSel.value||0); const v=ASSET_TYPES[idx]; return !!(v && /ソフトウェア/.test(v.label)); }
 function syncMethodChips(){ const val=document.getElementById('method').value; document.querySelectorAll('#methodChips .chip').forEach(btn=>{ btn.classList.toggle('chip-on', btn.dataset.val===val); }); }
 function syncSoftwareRules(){ const isSoft = isSoftwareSelected(); const methodSel = document.getElementById('method'); for(const opt of methodSel.options){ if(opt.value==='db200') opt.disabled = isSoft; else opt.disabled=false; } if(isSoft){ methodSel.value='sl'; } const dbChip = document.querySelector('#methodChips .chip[data-val="db200"]'); if(dbChip){ dbChip.classList.toggle('chip-disabled', isSoft); } syncMethodChips(); }
 
@@ -268,12 +260,12 @@ function updateRateInfo(){ const life = Number(document.getElementById('life').v
 
 function updateEstLife(){ const used = getUsedFlag(); const box = document.getElementById('usedEst'); if(!used){ box.style.display='none'; return; } const baseLife = Number(document.getElementById('life').value); const elapsedRaw = (document.getElementById('elapsedYears').value||'').trim(); if(!baseLife){ box.style.display='none'; return; } if(elapsedRaw===''){ box.style.display='none'; return; } const E=Math.floor(Math.max(0, Number(elapsedRaw))); const L = usedLifeSimplified(baseLife, E); box.textContent = `見積耐用年数：${L}年`; box.style.display='block'; }
 
-function getUsedFlag(){ return document.querySelector('#usedChips .chip-on')?.dataset.val==='used'; }
+function getUsedFlag(){ const on=document.querySelector('#usedChips .chip-on'); return on && on.dataset.val==='used'; }
 
 function go(){
   const price = parseYen(document.getElementById('price').value); const baseLife  = Number(document.getElementById('life').value); const method= document.getElementById('method').value; const usedFlag = getUsedFlag(); const elapsedInputRaw = document.getElementById('elapsedYears').value; const firstUseMonthEl = document.getElementById('firstUseMonth'); const m1Val = Number(document.getElementById('m1').value);
   const msg = document.getElementById('msg'); msg.innerHTML=''; if(!price||isNaN(price)||price<=0){ msg.innerHTML='<div class="warn">取得価額を入力してください。</div>'; return; } if(['sl','db200'].includes(method) && (!baseLife||isNaN(baseLife)||baseLife<=0)){ msg.innerHTML='<div class="warn">耐用年数（年）を入力してください。</div>'; return; } if(!(Number.isFinite(m1Val) && m1Val>=1 && m1Val<=12)){ msg.innerHTML='<div class="warn">初年度月数は1〜12の整数で入力してください。</div>'; return; }
-  let effectiveLife = baseLife; let usedNote=''; let EVal = null; if(usedFlag){ const hasElapsed = String(elapsedInputRaw).trim()!=='' && !isNaN(Number(elapsedInputRaw)); if(hasElapsed){ EVal = Math.floor(Math.max(0, Number(elapsedInputRaw))); firstUseMonthEl.value=''; } else { msg.innerHTML='<div class="warn">中古（簡便法）を適用する場合は、「経過年数」を入力してください（詳細設定を廃止したため初度・製造年月のみでは算定できません）。</div>'; return; } effectiveLife = usedLifeSimplified(baseLife, EVal); usedNote = `中古（簡便法）: 元${baseLife}年・経過${EVal}年 → 見積耐用年数 ${effectiveLife}年`; }
+  let effectiveLife = baseLife; let usedNote=''; let EVal = null; if(usedFlag){ const hasElapsed = String(elapsedInputRaw).trim()!=='' && !isNaN(Number(elapsedInputRaw)); if(hasElapsed){ EVal = Math.floor(Math.max(0, Number(elapsedInputRaw))); firstUseMonthEl.value=''; } else { msg.innerHTML='<div class="warn">中古（簡便法）を適用する場合は、「経過年数」を入力してください。</div>'; return; } effectiveLife = usedLifeSimplified(baseLife, EVal); usedNote = `中古（簡便法）: 元${baseLife}年・経過${EVal}年 → 見積耐用年数 ${effectiveLife}年`; }
   const intangible = isSoftwareSelected(); const methodEff = intangible ? 'sl' : method; const m1Override = Math.floor(m1Val); const rows = buildSchedule({price, life:effectiveLife, method:methodEff, m1Override, intangible}); render(rows); if(usedNote){ const box=document.getElementById('summary'); const prevText = box.textContent; const detail = formatUsedDetail(baseLife, EVal, effectiveLife); box.innerHTML = prevText + ' ／ ' + usedNote + '<br><span class="note">中古（簡便法）計算過程: ' + detail + '</span>'; }
   const blob = toCSV(rows); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='depreciation_schedule.csv'; document.getElementById('csvBtn').onclick=()=>a.click(); }
 
@@ -298,8 +290,8 @@ function init(){
 
 document.addEventListener('DOMContentLoaded', init);
 
-// ========= 自己テスト（詳細設定廃止に合わせて調整） =========
-(function selfTest(){ try{ const rowsSL = buildSchedule({price:300000, life:5, method:'sl', m1Override:7, intangible:false}); const depsSL = rowsSL.map(r=>Math.round(r.dep)); const okSL = depsSL.length===6 && depsSL[0]===35000 && depsSL[1]===60000 && depsSL[2]===60000 && depsSL[3]===60000 && depsSL[4]===60000 && depsSL[5]===24999 && rowsSL[5].monthsInt===5; if(!okSL) console.warn('SelfTest: SL pattern mismatch', depsSL, rowsSL.map(r=>r.monthsInt)); const rowsDB = buildSchedule({price:300000, life:5, method:'db200', m1Override:7, intangible:false}); const lastRow = rowsDB[rowsDB.length-1]; if(lastRow.monthsInt!==5 || Math.round(lastRow.close)!==1){ console.warn('SelfTest: DB200 last row expected months 5 and close 1, got', lastRow.monthsInt, lastRow.close); } const rowsSoft = buildSchedule({price:120000, life:5, method:'sl', m1Override:7, intangible:true}); const lastClose = rowsSoft[rowsSoft.length-1].close; if(lastClose!==0) console.warn('SelfTest: intangible last close expected 0, got', lastClose); if(RATE200[5].rate!==0.400) console.warn('SelfTest: RATE200[5].rate expected 0.400'); const L1 = usedLifeSimplified(6,4); if(L1!==2) console.warn('SelfTest: usedLifeSimplified 6/4 expected 2, got', L1); const L2 = usedLifeSimplified(5,7); if(L2!==2) console.warn('SelfTest: usedLifeSimplified 5/7 expected 2, got', L2); if(slRate(3)!==0.334) console.warn('SelfTest: slRate(3) expected 0.334, got', slRate(3)); if(parseYen('1,200,000')!==1200000) console.warn('SelfTest: parseYen comma fail'); const b = toCSV([{period:1,open:100,dep:100,monthsInt:12,acc:100,close:1,memo:'t'}]); if(!(b && b.size>0)) console.warn('SelfTest: CSV blob NG'); }catch(err){ console.error('SelfTest exception', err); }})();
+// ========= 自己テスト =========
+(function selfTest(){ try{ const rowsSL = buildSchedule({price:300000, life:5, method:'sl', m1Override:7, intangible:false}); const depsSL = rowsSL.map(r=>Math.round(r.dep)); const okSL = depsSL.length===6 && depsSL[0]===35000 && depsSL[1]===60000 && depsSL[2]===60000 && depsSL[3]===60000 && depsSL[4]===60000 && depsSL[5]===24999 && rowsSL[5].monthsInt===5; if(!okSL) console.warn('SelfTest: SL pattern mismatch', depsSL, rowsSL.map(r=>r.monthsInt)); const rowsDB = buildSchedule({price:300000, life:5, method:'db200', m1Override:7, intangible:false}); const lastRow = rowsDB[rowsDB.length-1]; if(lastRow.monthsInt!==5 || Math.round(lastRow.close)!==1){ console.warn('SelfTest: DB200 last row expected months 5 and close 1, got', lastRow.monthsInt, lastRow.close); } const rowsSoft = buildSchedule({price:120000, life:5, method:'sl', m1Override:7, intangible:true}); const lastClose = rowsSoft[rowsSoft.length-1].close; if(lastClose!==0) console.warn('SelfTest: intangible last close expected 0, got', lastClose); if(RATE200[5].rate!==0.400) console.warn('SelfTest: RATE200[5].rate expected 0.400'); if(slRate(3)!==0.334) console.warn('SelfTest: slRate(3) expected 0.334, got', slRate(3)); if(parseYen('1,200,000')!==1200000) console.warn('SelfTest: parseYen comma fail'); const b = toCSV([{period:1,open:100,dep:100,monthsInt:12,acc:100,close:1,memo:'t'}]); if(!(b && b.size>0)) console.warn('SelfTest: CSV blob NG'); }catch(err){ console.error('SelfTest exception', err); }})();
 </script>
 </body>
 </html>
