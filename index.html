@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8" />
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 <title>減価償却費 試算ツール</title>
 <link rel="icon" type="image/png" sizes="192x192" href="favicon192192.png" />
@@ -37,7 +37,6 @@
   .swatch{width:10px;height:10px;border-radius:3px;border:1px solid #94a3b8}
   footer.mk-mini{font-size:11px;color:var(--muted);margin-top:14px;text-align:center}
   .mk-mini a{color:inherit !important;text-decoration:underline}
-  a.footlink{color:inherit !important;text-decoration:underline}
   .warn{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:8px 10px;border-radius:10px;font-size:12px}
   .ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:8px 10px;border-radius:10px;font-size:12px}
   @media print{ body{background:#fff} .no-print{display:none !important} .card{box-shadow:none;border:0} .scroll-x{overflow:visible;border:0} th{position:static} }
@@ -46,10 +45,9 @@
   .chip{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;background:#fff;cursor:pointer;user-select:none;white-space:nowrap}
   .chip-on{background:var(--chipOnBg);border-color:var(--chipOnBd);color:var(--chipOnInk)}
   .chip-disabled{opacity:.5;pointer-events:none}
-  /* small life & m1 input */
+  /* compact fields */
   #life{max-width:110px;padding:8px 10px;font-size:15px}
   #m1{max-width:110px;padding:8px 10px;font-size:15px;background:#fff}
-  /* compact fields: asset preset & month input */
   #assetType{font-size:14px;padding:10px 10px}
   #firstUseMonth{font-size:14px;padding:10px 10px}
 </style>
@@ -58,7 +56,7 @@
   <div class="wrap">
     <div class="card">
       <div class="header">
-        <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener"><img class="logo" src="ロゴ.jpg" alt="税理士法人松本会計事務所 ロゴ"/></a>
+        <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener"><img class="logo" src="logo.jpg" alt="税理士法人松本会計事務所 ロゴ"/></a>
         <div>
           <h1>減価償却費 試算ツール</h1>
           <div class="chips">
@@ -67,8 +65,7 @@
           </div>
         </div>
       </div>
-      
-      <!-- 入力フロー：資産タイプ → 新規/中古 → 取得価額 → 耐用年数 → 償却方法 → 初年度月数 → 端数処理 -->
+
       <div class="grid">
         <div>
           <label>資産タイプ（主要科目プリセット）</label>
@@ -168,22 +165,13 @@
     </div>
 
     <div class="card" style="margin-top:12px">
-      <footer>
-        <div class="note">
-          ・定率法（200%）は<strong>償却率・改定償却率・保証率</strong>を表に基づき適用し、保証額未達期から改定取得価額×改定償却率で<strong>毎年同額</strong>に切替。<br/>
-          ・初年度は入力した月数/12で按分（いわゆる月割）。最終年は<strong>1円残し</strong>で調整（無形は0円）。<br/>
-          ・中古（簡便法）は、<strong>法定耐用年数と経過年数</strong>から見積耐用年数を算定（端数切捨て・<strong>最低2年</strong>）。<br/>
-          ・プリセット耐用年数は代表例。正式な年数は国税庁「<a class="footlink" href="https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/pdf/2100_01.pdf" target="_blank" rel="noopener">主な耐用年数表</a>」および「<a class="footlink" href="https://www.nta.go.jp/taxes/shiraberu/taxanswer/hojin/5404.htm" target="_blank" rel="noopener">中古資産の耐用年数（No.5404）</a>」をご確認ください。
-        </div>
+      <footer class="mk-mini">
+        © <span id="cpy-year">2025</span> <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener license">税理士法人松本会計事務所</a> ｜ 
+        <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="license noopener">CC BY-NC-SA 4.0</a> ｜ 
+        <a href="/tool-portal/terms.html" target="_blank" rel="noopener">利用条件</a> ｜ 
+        <span id="build-rev">r20</span>（<span id="last-updated-date"></span>）
       </footer>
     </div>
-
-    <footer class="mk-mini">
-      © <span id="cpy-year">2025</span> <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener license">税理士法人松本会計事務所</a> ｜ 
-      <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="license noopener">CC BY-NC-SA 4.0</a> ｜ 
-      <a href="/tool-portal/terms.html" target="_blank" rel="noopener">利用条件</a> ｜ 
-      <span id="build-rev">r17</span>（<span id="last-updated-date"></span>）
-    </footer>
   </div>
 
 <script>
@@ -193,7 +181,9 @@ const RATE200 = { 2:{rate:1.000,revised:1.000,guarantee:0.00000}, 3:{rate:0.667,
 
 const ASSET_TYPES = [ {label:'（直接入力）', life:null}, {label:'パソコン（電子計算機・PC）', life:4}, {label:'サーバ（電子計算機のうち）', life:5}, {label:'複合機・プリンタ（事務用機器）', life:5}, {label:'工具・器具備品（一般）', life:5}, {label:'普通乗用車（一般）', life:6}, {label:'軽自動車等', life:4}, {label:'トラック（小型）', life:5}, {label:'事務机・椅子等（什器備品）', life:8}, {label:'建物附属設備（事務所等）', life:15}, {label:'ソフトウェア（自社利用）', life:5} ];
 
-// -------- utils ---------
+// -------- helpers & utils ---------
+const byId = id => document.getElementById(id);
+const valOf = id => { const el = byId(id); return el ? el.value : ''; };
 const fmtYen = n => new Intl.NumberFormat('ja-JP',{maximumFractionDigits:0}).format(Math.round(n||0));
 const ceil3 = x => Math.ceil(x*1000)/1000; // 定額法の率：第3位切上げ
 const slRate = life => (life===3 ? 0.334 : ceil3(1/Math.max(1, life)));
@@ -229,11 +219,12 @@ function buildSchedule({price, life, method, m1Override=null, intangible=false})
 }
 
 function getRoundingMode(){ const on=document.querySelector('#roundingChips .chip-on'); return on? on.dataset.val : 'floor'; }
+function isSoftwareSelected(){ const atSel=byId('assetType'); if(!atSel) return false; const idx = Number(atSel.value||0); const it = ASSET_TYPES[idx]; return !!(it && /ソフトウェア/.test(it.label)); }
 
 function toCSV(rows){ const mode=getRoundingMode(); const header = ['期','期首帳簿価額','償却費','月数','期末帳簿価額','備考']; const lines = [header.join(',')]; const salvageDisp = isSoftwareSelected()?0:1; rows.forEach(r=>{ const o=roundByMode(r.open,mode); const d=roundByMode(r.dep,mode); let c=o-d; c = Math.max(salvageDisp, c); lines.push([r.period, o, d, r.monthsInt, c, r.memo].join(',')); }); return new Blob(["\uFEFF" + lines.join('\n')], {type:'text/csv;charset=utf-8;'}); }
 
 function render(rows){
-  const mode=getRoundingMode(); const tbody = document.querySelector('#tbl tbody'); tbody.innerHTML = ''; let firstDep = rows[0]?.dep||0; const dispOpen=[]; const dispDep=[];
+  const mode=getRoundingMode(); const tbody = document.querySelector('#tbl tbody'); tbody.innerHTML = ''; let firstDep = rows[0]? rows[0].dep:0; const dispOpen=[]; const dispDep=[];
   const salvageDisp = isSoftwareSelected()?0:1;
   rows.forEach(r=>{ const o=roundByMode(r.open,mode); const d=roundByMode(r.dep,mode); let c=o-d; c = Math.max(salvageDisp, c); dispOpen.push(o); dispDep.push(d); const tr = document.createElement('tr'); tr.innerHTML = `<td style="text-align:left">${r.period}</td>
       <td>¥${fmtYen(o)}</td>
@@ -245,76 +236,67 @@ function render(rows){
 
 // ====== グラフ描画（Canvas 2D） ======
 let lastRows = []; let lastDisp={open:[],dep:[]};
-function renderChart(){ const canvas = document.getElementById('chart'); if(!canvas || !lastRows || lastRows.length===0) return; const dpr = Math.max(1, window.devicePixelRatio||1); const W = canvas.clientWidth; const H = canvas.clientHeight; canvas.width = Math.floor(W*dpr); canvas.height = Math.floor(H*dpr); const ctx = canvas.getContext('2d'); ctx.scale(dpr,dpr); ctx.clearRect(0,0,W,H);
+function renderChart(){ try{ const canvas = document.getElementById('chart'); if(!canvas || !lastRows || lastRows.length===0) return; const dpr = Math.max(1, window.devicePixelRatio||1); const W = canvas.clientWidth; const H = canvas.clientHeight; if(!(W>0&&H>0)) return; canvas.width = Math.floor(W*dpr); canvas.height = Math.floor(H*dpr); const ctx = canvas.getContext('2d'); if(!ctx) return; ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr); ctx.clearRect(0,0,W,H);
   const padding = {l:50,r:16,t:12,b:40}; const plotW = W - padding.l - padding.r; const plotH = H - padding.t - padding.b; if(plotW<=0||plotH<=0) return;
   const periods = lastRows.length; const maxY = Math.max(...lastDisp.open, ...lastDisp.dep, 1);
   const segW = plotW / Math.max(1, periods);
-  const x = i => padding.l + segW*(i + 0.5); // バー中心を区画中央に配置し、Y軸と重ならないように
+  const x = i => padding.l + segW*(i + 0.5); // 区画中央配置
   const y = v => padding.t + (plotH*(1 - v/maxY));
   // 軸
   ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(padding.l, padding.t); ctx.lineTo(padding.l, padding.t+plotH); ctx.lineTo(padding.l+plotW, padding.t+plotH); ctx.stroke();
-  // 棒：期首簿価と償却限度額（セグメント幅に応じて狭める）
+  // 棒
   const barW = Math.max(2, Math.min(14, segW*0.28));
   for(let i=0;i<periods;i++){ const cx = x(i); const h1 = plotH * (lastDisp.open[i]/maxY); const h2 = plotH * (lastDisp.dep[i]/maxY); ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bar1').trim() || '#bcd7ea'; ctx.fillRect(cx - barW*1.3, padding.t + (plotH - h1), barW, h1); ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bar2').trim() || '#f7c8c8'; ctx.fillRect(cx + barW*0.3, padding.t + (plotH - h2), barW, h2); }
-  // X軸ラベル（期）
+  // X軸ラベル
   ctx.fillStyle='#475569'; ctx.font='11px system-ui, -apple-system, Roboto, Arial'; ctx.textAlign='center'; ctx.textBaseline='top'; for(let i=0;i<periods;i++){ const lx = x(i); ctx.fillText((i+1)+'期', lx, padding.t+plotH+6); }
   // Y目盛
   ctx.textAlign='right'; ctx.textBaseline='middle'; const ticks = 4; for(let t=0;t<=ticks;t++){ const v = maxY * (t/ticks); const yy = y(v); ctx.fillText('¥'+fmtYen(v), padding.l-6, yy); ctx.strokeStyle='#eef2f7'; ctx.beginPath(); ctx.moveTo(padding.l, yy); ctx.lineTo(padding.l+plotW, yy); ctx.stroke(); }
-}; const plotW = W - padding.l - padding.r; const plotH = H - padding.t - padding.b; if(plotW<=0||plotH<=0) return;
-  const periods = lastRows.length; const maxY = Math.max(...lastDisp.open, ...lastDisp.dep, 1); const x = i => padding.l + (plotW*(i)/(periods-1||1)); const y = v => padding.t + (plotH*(1 - v/maxY));
-  // 軸
-  ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(padding.l, padding.t); ctx.lineTo(padding.l, padding.t+plotH); ctx.lineTo(padding.l+plotW, padding.t+plotH); ctx.stroke();
-  // 棒：期首簿価と償却限度額
-  const barW = Math.max(2, plotW/(periods*10)); for(let i=0;i<periods;i++){ const cx = x(i); const h1 = plotH * (lastDisp.open[i]/maxY); const h2 = plotH * (lastDisp.dep[i]/maxY); ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bar1').trim() || '#bcd7ea'; ctx.fillRect(cx - barW*1.3, padding.t + (plotH - h1), barW, h1); ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bar2').trim() || '#f7c8c8'; ctx.fillRect(cx + barW*0.3, padding.t + (plotH - h2), barW, h2); }
-  // X軸ラベル（期）
-  ctx.fillStyle='#475569'; ctx.font='11px system-ui, -apple-system, Roboto, Arial'; ctx.textAlign='center'; ctx.textBaseline='top'; for(let i=0;i<periods;i++){ const lx = x(i); ctx.fillText((i+1)+'期', lx, padding.t+plotH+6); }
-  // Y目盛
-  ctx.textAlign='right'; ctx.textBaseline='middle'; const ticks = 4; for(let t=0;t<=ticks;t++){ const v = maxY * (t/ticks); const yy = y(v); ctx.fillText('¥'+fmtYen(v), padding.l-6, yy); ctx.strokeStyle='#eef2f7'; ctx.beginPath(); ctx.moveTo(padding.l, yy); ctx.lineTo(padding.l+plotW, yy); ctx.stroke(); }
-}
+}catch(err){ console.error('chart render error', err); }}
 window.addEventListener('resize', renderChart);
 
-function isSoftwareSelected(){ const atSel=document.getElementById('assetType'); const idx = Number(atSel.value||0); const v=ASSET_TYPES[idx]; return !!(v && /ソフトウェア/.test(v.label)); }
-function syncMethodChips(){ const val=document.getElementById('method').value; document.querySelectorAll('#methodChips .chip').forEach(btn=>{ btn.classList.toggle('chip-on', btn.dataset.val===val); }); }
-function syncSoftwareRules(){ const isSoft = isSoftwareSelected(); const methodSel = document.getElementById('method'); for(const opt of methodSel.options){ if(opt.value==='db200') opt.disabled = isSoft; else opt.disabled=false; } if(isSoft){ methodSel.value='sl'; } const dbChip = document.querySelector('#methodChips .chip[data-val="db200"]'); if(dbChip){ dbChip.classList.toggle('chip-disabled', isSoft); } syncMethodChips(); }
+function syncMethodChips(){ const sel=byId('method'); if(!sel) return; const val=sel.value; document.querySelectorAll('#methodChips .chip').forEach(btn=>{ btn.classList.toggle('chip-on', btn.dataset.val===val); }); }
+function syncSoftwareRules(){ const isSoft = isSoftwareSelected(); const methodSel = byId('method'); if(!methodSel) return; for(let i=0;i<methodSel.options.length;i++){ const opt = methodSel.options[i]; if(opt.value==='db200') opt.disabled = isSoft; else opt.disabled=false; } if(isSoft){ methodSel.value='sl'; } const dbChip = document.querySelector('#methodChips .chip[data-val="db200"]'); if(dbChip){ dbChip.classList.toggle('chip-disabled', isSoft); } syncMethodChips(); }
 
-function updateRateInfo(){ const life = Number(document.getElementById('life').value); const el=document.getElementById('rateInfo'); if(!life){ el.textContent=''; return; } const sl=slRate(life); const r200=RATE200[life]?.rate; const rev=RATE200[life]?.revised; const g=RATE200[life]?.guarantee; el.textContent = `償却率：定額 ${sl.toFixed(3)} / 定率 ${r200? r200.toFixed(3):'-'}（改定 ${rev? rev.toFixed(3):'-'}・保証 ${g? g.toFixed(5):'-'}）`; }
+function updateRateInfo(){ const lifeEl=byId('life'); const el=byId('rateInfo'); if(!lifeEl||!el) return; const life = Number(lifeEl.value); if(!life){ el.textContent=''; return; } const sl=slRate(life); const r200=RATE200[life]? RATE200[life].rate : undefined; const rev=RATE200[life]? RATE200[life].revised : undefined; const g=RATE200[life]? RATE200[life].guarantee : undefined; el.textContent = `償却率：定額 ${sl.toFixed(3)} / 定率 ${r200!=null? r200.toFixed(3):'-'}（改定 ${rev!=null? rev.toFixed(3):'-'}・保証 ${g!=null? g.toFixed(5):'-'}）`; }
 
-function updateEstLife(){ const used = getUsedFlag(); const box = document.getElementById('usedEst'); if(!used){ box.style.display='none'; return; } const baseLife = Number(document.getElementById('life').value); const elapsedRaw = (document.getElementById('elapsedYears').value||'').trim(); if(!baseLife){ box.style.display='none'; return; } if(elapsedRaw===''){ box.style.display='none'; return; } const E=Math.floor(Math.max(0, Number(elapsedRaw))); const L = usedLifeSimplified(baseLife, E); box.textContent = `見積耐用年数：${L}年`; box.style.display='block'; }
+function updateEstLife(){ const used = getUsedFlag(); const box = byId('usedEst'); if(!box) return; if(!used){ box.style.display='none'; return; } const lifeEl=byId('life'); const elapsedEl=byId('elapsedYears'); if(!lifeEl||!elapsedEl){ box.style.display='none'; return; } const baseLife = Number(lifeEl.value); const elapsedRaw = (elapsedEl.value||'').trim(); if(!baseLife){ box.style.display='none'; return; } if(elapsedRaw===''){ box.style.display='none'; return; } const E=Math.floor(Math.max(0, Number(elapsedRaw))); const L = usedLifeSimplified(baseLife, E); box.textContent = `見積耐用年数：${L}年`; box.style.display='block'; }
 
-function getUsedFlag(){ const on=document.querySelector('#usedChips .chip-on'); return on && on.dataset.val==='used'; }
+function getUsedFlag(){ const on=document.querySelector('#usedChips .chip-on'); return !!(on && on.dataset.val==='used'); }
 
 function go(){
-  const price = parseYen(document.getElementById('price').value); const baseLife  = Number(document.getElementById('life').value); const method= document.getElementById('method').value; const usedFlag = getUsedFlag(); const elapsedInputRaw = document.getElementById('elapsedYears').value; const firstUseMonthEl = document.getElementById('firstUseMonth'); const m1Val = Number(document.getElementById('m1').value);
-  const msg = document.getElementById('msg'); msg.innerHTML=''; if(!price||isNaN(price)||price<=0){ msg.innerHTML='<div class="warn">取得価額を入力してください。</div>'; return; } if(['sl','db200'].includes(method) && (!baseLife||isNaN(baseLife)||baseLife<=0)){ msg.innerHTML='<div class="warn">耐用年数（年）を入力してください。</div>'; return; } if(!(Number.isFinite(m1Val) && m1Val>=1 && m1Val<=12)){ msg.innerHTML='<div class="warn">初年度月数は1〜12の整数で入力してください。</div>'; return; }
-  let effectiveLife = baseLife; let usedNote=''; let EVal = null; if(usedFlag){ const hasElapsed = String(elapsedInputRaw).trim()!=='' && !isNaN(Number(elapsedInputRaw)); if(hasElapsed){ EVal = Math.floor(Math.max(0, Number(elapsedInputRaw))); firstUseMonthEl.value=''; } else { msg.innerHTML='<div class="warn">中古（簡便法）を適用する場合は、「経過年数」を入力してください。</div>'; return; } effectiveLife = usedLifeSimplified(baseLife, EVal); usedNote = `中古（簡便法）: 元${baseLife}年・経過${EVal}年 → 見積耐用年数 ${effectiveLife}年`; }
-  const intangible = isSoftwareSelected(); const methodEff = intangible ? 'sl' : method; const m1Override = Math.floor(m1Val); const rows = buildSchedule({price, life:effectiveLife, method:methodEff, m1Override, intangible}); render(rows); if(usedNote){ const box=document.getElementById('summary'); const prevText = box.textContent; const detail = formatUsedDetail(baseLife, EVal, effectiveLife); box.innerHTML = prevText + ' ／ ' + usedNote + '<br><span class="note">中古（簡便法）計算過程: ' + detail + '</span>'; }
-  const blob = toCSV(rows); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='depreciation_schedule.csv'; document.getElementById('csvBtn').onclick=()=>a.click(); }
+  const price = parseYen(valOf('price')); const baseLife  = Number(valOf('life')); const method= valOf('method'); const usedFlag = getUsedFlag(); const elapsedInputRaw = valOf('elapsedYears'); const firstUseMonthEl = byId('firstUseMonth'); const m1Val = Number(valOf('m1'));
+  const msg = byId('msg'); if(msg) msg.innerHTML=''; if(!price||isNaN(price)||price<=0){ if(msg) msg.innerHTML='<div class="warn">取得価額を入力してください。</div>'; return; } if(['sl','db200'].includes(method) && (!baseLife||isNaN(baseLife)||baseLife<=0)){ if(msg) msg.innerHTML='<div class="warn">耐用年数（年）を入力してください。</div>'; return; } if(!(Number.isFinite(m1Val) && m1Val>=1 && m1Val<=12)){ if(msg) msg.innerHTML='<div class="warn">初年度月数は1〜12の整数で入力してください。</div>'; return; }
+  let effectiveLife = baseLife; let usedNote=''; let EVal = null; if(usedFlag){ const hasElapsed = String(elapsedInputRaw).trim()!=='' && !isNaN(Number(elapsedInputRaw)); if(hasElapsed){ EVal = Math.floor(Math.max(0, Number(elapsedInputRaw))); if(firstUseMonthEl) firstUseMonthEl.value=''; } else { if(msg) msg.innerHTML='<div class="warn">中古（簡便法）を適用する場合は、「経過年数」を入力してください。</div>'; return; } effectiveLife = usedLifeSimplified(baseLife, EVal); usedNote = `中古（簡便法）: 元${baseLife}年・経過${EVal}年 → 見積耐用年数 ${effectiveLife}年`; }
+  const intangible = isSoftwareSelected(); const methodEff = intangible ? 'sl' : method; const m1Override = Math.floor(m1Val); const rows = buildSchedule({price, life:effectiveLife, method:methodEff, m1Override, intangible}); render(rows); if(usedNote){ const box=byId('summary'); if(box){ const prevText = box.textContent; const detail = formatUsedDetail(baseLife, EVal, effectiveLife); box.innerHTML = prevText + ' ／ ' + usedNote + '<br><span class="note">中古（簡便法）計算過程: ' + detail + '</span>'; } }
+  const blob = toCSV(rows); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='depreciation_schedule.csv'; const csvBtn=byId('csvBtn'); if(csvBtn) csvBtn.onclick=()=>a.click(); }
 
 function init(){
   // 資産タイプ
-  const atSel=document.getElementById('assetType'); atSel.innerHTML=''; ASSET_TYPES.forEach((x,i)=>{ const op=document.createElement('option'); op.value=i; op.textContent=x.label + (x.life?`（${x.life}年）`:'' ); atSel.appendChild(op); }); atSel.addEventListener('change',()=>{ const v=ASSET_TYPES[Number(atSel.value)]; if(v&&v.life){ document.getElementById('life').value=v.life; updateRateInfo(); } syncSoftwareRules(); updateEstLife(); });
+  const atSel=byId('assetType'); if(atSel){ atSel.innerHTML=''; ASSET_TYPES.forEach((x,i)=>{ const op=document.createElement('option'); op.value=i; op.textContent=x.label + (x.life?`（${x.life}年）`:'' ); atSel.appendChild(op); }); atSel.addEventListener('change',()=>{ const v=ASSET_TYPES[Number(atSel.value)]; if(v&&v.life){ const lifeEl=byId('life'); if(lifeEl){ lifeEl.value=v.life; updateRateInfo(); } } syncSoftwareRules(); updateEstLife(); }); }
   // 新規/中古チップ
-  document.querySelectorAll('#usedChips .chip').forEach(btn=>{ btn.addEventListener('click', ()=>{ document.querySelectorAll('#usedChips .chip').forEach(b=>b.classList.remove('chip-on')); btn.classList.add('chip-on'); document.getElementById('usedFields').style.display = getUsedFlag()? '' : 'none'; updateEstLife(); }); });
+  document.querySelectorAll('#usedChips .chip').forEach(btn=>{ btn.addEventListener('click', ()=>{ document.querySelectorAll('#usedChips .chip').forEach(b=>b.classList.remove('chip-on')); btn.classList.add('chip-on'); const uf=byId('usedFields'); if(uf) uf.style.display = getUsedFlag()? '' : 'none'; updateEstLife(); }); });
   // 金額のリアルタイム・カンマ付与
-  const priceEl=document.getElementById('price'); let composing=false; const formatNow=()=>{ if(composing) return; const n=parseYen(priceEl.value); if(!isNaN(n)){ priceEl.value=fmtYen(n); try{ priceEl.setSelectionRange(priceEl.value.length, priceEl.value.length);}catch(_){}} }; priceEl.addEventListener('compositionstart', ()=> composing=true); priceEl.addEventListener('compositionend', ()=> { composing=false; formatNow(); }); priceEl.addEventListener('input', formatNow); priceEl.addEventListener('blur', formatNow);
+  const priceEl=byId('price'); if(priceEl){ let composing=false; const formatNow=()=>{ if(composing) return; const n=parseYen(priceEl.value); if(!isNaN(n)){ priceEl.value=fmtYen(n); try{ priceEl.setSelectionRange(priceEl.value.length, priceEl.value.length);}catch(_){} } }; priceEl.addEventListener('compositionstart', ()=> composing=true); priceEl.addEventListener('compositionend', ()=> { composing=false; formatNow(); }); priceEl.addEventListener('input', formatNow); priceEl.addEventListener('blur', formatNow); }
   // 中古 相互排他
-  const elapsed=document.getElementById('elapsedYears'); const first=document.getElementById('firstUseMonth'); elapsed.addEventListener('input', ()=>{ if(elapsed.value.trim()!==''){ first.value=''; } updateEstLife(); }); first.addEventListener('input', ()=>{ if(first.value.trim()!==''){ elapsed.value=''; } updateEstLife(); });
+  const elapsed=byId('elapsedYears'); const first=byId('firstUseMonth'); if(elapsed&&first){ elapsed.addEventListener('input', ()=>{ if(elapsed.value.trim()!==''){ first.value=''; } updateEstLife(); }); first.addEventListener('input', ()=>{ if(first.value.trim()!==''){ elapsed.value=''; } updateEstLife(); }); }
   // 依存入力
-  document.getElementById('life').addEventListener('input', ()=>{ updateRateInfo(); updateEstLife(); }); updateRateInfo();
+  const lifeEl=byId('life'); if(lifeEl){ lifeEl.addEventListener('input', ()=>{ updateRateInfo(); updateEstLife(); }); updateRateInfo(); }
   // 方法チップ
-  document.querySelectorAll('#methodChips .chip').forEach(btn=>{ btn.addEventListener('click', ()=>{ const val=btn.dataset.val; if(isSoftwareSelected() && val==='db200') return; document.getElementById('method').value = val; syncMethodChips(); }); }); syncSoftwareRules();
+  document.querySelectorAll('#methodChips .chip').forEach(btn=>{ btn.addEventListener('click', ()=>{ const val=btn.dataset.val; if(isSoftwareSelected() && val==='db200') return; const sel=byId('method'); if(sel){ sel.value = val; syncMethodChips(); } }); }); syncSoftwareRules();
   // 端数処理チップ
   document.querySelectorAll('#roundingChips .chip').forEach(btn=>{ btn.addEventListener('click', ()=>{ document.querySelectorAll('#roundingChips .chip').forEach(b=>b.classList.remove('chip-on')); btn.classList.add('chip-on'); if(lastRows.length) render(lastRows); }); });
   // ボタン
-  document.getElementById('run').addEventListener('click', go); document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+  const runBtn=byId('run'); if(runBtn) runBtn.addEventListener('click', go); const printBtn=byId('printBtn'); if(printBtn) printBtn.addEventListener('click', ()=> window.print());
+  // 初期チップ同期
+  syncMethodChips();
 }
 
 document.addEventListener('DOMContentLoaded', init);
 
-document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=document.getElementById('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=document.getElementById('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=document.getElementById('build-rev'); if(rEl) rEl.textContent='r17'; }catch(e){} });
+document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r20'; }catch(e){} });
 
-// ========= 自己テスト =========
-(function selfTest(){ try{ const rowsSL = buildSchedule({price:300000, life:5, method:'sl', m1Override:7, intangible:false}); const depsSL = rowsSL.map(r=>Math.round(r.dep)); const okSL = depsSL.length===6 && depsSL[0]===35000 && depsSL[1]===60000 && depsSL[2]===60000 && depsSL[3]===60000 && depsSL[4]===60000 && depsSL[5]===24999 && rowsSL[5].monthsInt===5; if(!okSL) console.warn('SelfTest: SL pattern mismatch', depsSL, rowsSL.map(r=>r.monthsInt)); const rowsDB = buildSchedule({price:300000, life:5, method:'db200', m1Override:7, intangible:false}); const lastRow = rowsDB[rowsDB.length-1]; if(lastRow.monthsInt!==5 || Math.round(lastRow.close)!==1){ console.warn('SelfTest: DB200 last row expected months 5 and close 1, got', lastRow.monthsInt, lastRow.close); } const rowsSoft = buildSchedule({price:120000, life:5, method:'sl', m1Override:7, intangible:true}); const lastClose = rowsSoft[rowsSoft.length-1].close; if(lastClose!==0) console.warn('SelfTest: intangible last close expected 0, got', lastClose); if(RATE200[5].rate!==0.400) console.warn('SelfTest: RATE200[5].rate expected 0.400'); if(slRate(3)!==0.334) console.warn('SelfTest: slRate(3) expected 0.334, got', slRate(3)); if(parseYen('1,200,000')!==1200000) console.warn('SelfTest: parseYen comma fail'); const b = toCSV([{period:1,open:100,dep:100,monthsInt:12,acc:100,close:1,memo:'t'}]); if(!(b && b.size>0)) console.warn('SelfTest: CSV blob NG'); }catch(err){ console.error('SelfTest exception', err); }})();
+// ========= 自己テスト（UIに依存しない最小限） =========
+(function selfTest(){ try{ const rowsSL = buildSchedule({price:300000, life:5, method:'sl', m1Override:7, intangible:false}); const depsSL = rowsSL.map(r=>Math.round(r.dep)); const okSL = depsSL.length===6 && depsSL[0]===35000 && depsSL[1]===60000 && depsSL[2]===60000 && depsSL[3]===60000 && depsSL[4]===60000 && depsSL[5]===24999 && rowsSL[5].monthsInt===5; if(!okSL) console.warn('SelfTest: SL pattern mismatch', depsSL, rowsSL.map(r=>r.monthsInt)); const rowsDB = buildSchedule({price:300000, life:5, method:'db200', m1Override:7, intangible:false}); const lastRow = rowsDB[rowsDB.length-1]; if(lastRow.monthsInt!==5 || Math.round(lastRow.close)!==1){ console.warn('SelfTest: DB200 last row expected months 5 and close 1, got', lastRow.monthsInt, lastRow.close); } const rowsSoft = buildSchedule({price:120000, life:5, method:'sl', m1Override:7, intangible:true}); const lastClose = rowsSoft[rowsSoft.length-1].close; if(lastClose!==0) console.warn('SelfTest: intangible last close expected 0, got', lastClose); if(RATE200[5].rate!==0.400) console.warn('SelfTest: RATE200[5].rate expected 0.400'); if(slRate(3)!==0.334) console.warn('SelfTest: slRate(3) expected 0.334, got', slRate(3)); const b = toCSV([{period:1,open:100,dep:100,monthsInt:12,acc:100,close:1,memo:'t'}]); if(!(b && b.size>0)) console.warn('SelfTest: CSV blob NG'); }catch(err){ console.error('SelfTest exception', err); }})();
 </script>
 </body>
 </html>
