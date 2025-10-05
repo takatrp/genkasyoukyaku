@@ -35,7 +35,8 @@
   .legend{position:absolute;right:8px;top:6px;background:#ffffffcc;border:1px solid #e2e8f0;border-radius:10px;padding:6px 8px;font-size:11px;color:#334155}
   .legend-item{display:flex;align-items:center;gap:6px;margin:3px 0}
   .swatch{width:10px;height:10px;border-radius:3px;border:1px solid #94a3b8}
-  footer.site{font-size:11px;color:var(--muted);margin-top:14px;text-align:center}
+  footer.mk-mini{font-size:11px;color:var(--muted);margin-top:14px;text-align:center}
+  .mk-mini a{color:inherit !important;text-decoration:underline}
   a.footlink{color:inherit !important;text-decoration:underline}
   .warn{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:8px 10px;border-radius:10px;font-size:12px}
   .ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:8px 10px;border-radius:10px;font-size:12px}
@@ -48,6 +49,9 @@
   /* small life & m1 input */
   #life{max-width:110px;padding:8px 10px;font-size:15px}
   #m1{max-width:110px;padding:8px 10px;font-size:15px;background:#fff}
+  /* compact fields: asset preset & month input */
+  #assetType{font-size:14px;padding:10px 10px}
+  #firstUseMonth{font-size:14px;padding:10px 10px}
 </style>
 </head>
 <body>
@@ -174,8 +178,11 @@
       </footer>
     </div>
 
-    <footer class="site">
-      Copyright (c) 2025 <a class="footlink" href="https://www.matsumoto-kaikei.or.jp/">税理士法人松本会計事務所</a> All Rights Reserved. / r14
+    <footer class="mk-mini">
+      © <span id="cpy-year">2025</span> <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener license">税理士法人松本会計事務所</a> ｜ 
+      <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="license noopener">CC BY-NC-SA 4.0</a> ｜ 
+      <a href="/tool-portal/terms.html" target="_blank" rel="noopener">利用条件</a> ｜ 
+      <span id="build-rev">r17</span>（<span id="last-updated-date"></span>）
     </footer>
   </div>
 
@@ -240,6 +247,20 @@ function render(rows){
 let lastRows = []; let lastDisp={open:[],dep:[]};
 function renderChart(){ const canvas = document.getElementById('chart'); if(!canvas || !lastRows || lastRows.length===0) return; const dpr = Math.max(1, window.devicePixelRatio||1); const W = canvas.clientWidth; const H = canvas.clientHeight; canvas.width = Math.floor(W*dpr); canvas.height = Math.floor(H*dpr); const ctx = canvas.getContext('2d'); ctx.scale(dpr,dpr); ctx.clearRect(0,0,W,H);
   const padding = {l:50,r:16,t:12,b:40}; const plotW = W - padding.l - padding.r; const plotH = H - padding.t - padding.b; if(plotW<=0||plotH<=0) return;
+  const periods = lastRows.length; const maxY = Math.max(...lastDisp.open, ...lastDisp.dep, 1);
+  const segW = plotW / Math.max(1, periods);
+  const x = i => padding.l + segW*(i + 0.5); // バー中心を区画中央に配置し、Y軸と重ならないように
+  const y = v => padding.t + (plotH*(1 - v/maxY));
+  // 軸
+  ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(padding.l, padding.t); ctx.lineTo(padding.l, padding.t+plotH); ctx.lineTo(padding.l+plotW, padding.t+plotH); ctx.stroke();
+  // 棒：期首簿価と償却限度額（セグメント幅に応じて狭める）
+  const barW = Math.max(2, Math.min(14, segW*0.28));
+  for(let i=0;i<periods;i++){ const cx = x(i); const h1 = plotH * (lastDisp.open[i]/maxY); const h2 = plotH * (lastDisp.dep[i]/maxY); ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bar1').trim() || '#bcd7ea'; ctx.fillRect(cx - barW*1.3, padding.t + (plotH - h1), barW, h1); ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bar2').trim() || '#f7c8c8'; ctx.fillRect(cx + barW*0.3, padding.t + (plotH - h2), barW, h2); }
+  // X軸ラベル（期）
+  ctx.fillStyle='#475569'; ctx.font='11px system-ui, -apple-system, Roboto, Arial'; ctx.textAlign='center'; ctx.textBaseline='top'; for(let i=0;i<periods;i++){ const lx = x(i); ctx.fillText((i+1)+'期', lx, padding.t+plotH+6); }
+  // Y目盛
+  ctx.textAlign='right'; ctx.textBaseline='middle'; const ticks = 4; for(let t=0;t<=ticks;t++){ const v = maxY * (t/ticks); const yy = y(v); ctx.fillText('¥'+fmtYen(v), padding.l-6, yy); ctx.strokeStyle='#eef2f7'; ctx.beginPath(); ctx.moveTo(padding.l, yy); ctx.lineTo(padding.l+plotW, yy); ctx.stroke(); }
+}; const plotW = W - padding.l - padding.r; const plotH = H - padding.t - padding.b; if(plotW<=0||plotH<=0) return;
   const periods = lastRows.length; const maxY = Math.max(...lastDisp.open, ...lastDisp.dep, 1); const x = i => padding.l + (plotW*(i)/(periods-1||1)); const y = v => padding.t + (plotH*(1 - v/maxY));
   // 軸
   ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(padding.l, padding.t); ctx.lineTo(padding.l, padding.t+plotH); ctx.lineTo(padding.l+plotW, padding.t+plotH); ctx.stroke();
@@ -289,6 +310,8 @@ function init(){
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=document.getElementById('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=document.getElementById('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=document.getElementById('build-rev'); if(rEl) rEl.textContent='r17'; }catch(e){} });
 
 // ========= 自己テスト =========
 (function selfTest(){ try{ const rowsSL = buildSchedule({price:300000, life:5, method:'sl', m1Override:7, intangible:false}); const depsSL = rowsSL.map(r=>Math.round(r.dep)); const okSL = depsSL.length===6 && depsSL[0]===35000 && depsSL[1]===60000 && depsSL[2]===60000 && depsSL[3]===60000 && depsSL[4]===60000 && depsSL[5]===24999 && rowsSL[5].monthsInt===5; if(!okSL) console.warn('SelfTest: SL pattern mismatch', depsSL, rowsSL.map(r=>r.monthsInt)); const rowsDB = buildSchedule({price:300000, life:5, method:'db200', m1Override:7, intangible:false}); const lastRow = rowsDB[rowsDB.length-1]; if(lastRow.monthsInt!==5 || Math.round(lastRow.close)!==1){ console.warn('SelfTest: DB200 last row expected months 5 and close 1, got', lastRow.monthsInt, lastRow.close); } const rowsSoft = buildSchedule({price:120000, life:5, method:'sl', m1Override:7, intangible:true}); const lastClose = rowsSoft[rowsSoft.length-1].close; if(lastClose!==0) console.warn('SelfTest: intangible last close expected 0, got', lastClose); if(RATE200[5].rate!==0.400) console.warn('SelfTest: RATE200[5].rate expected 0.400'); if(slRate(3)!==0.334) console.warn('SelfTest: slRate(3) expected 0.334, got', slRate(3)); if(parseYen('1,200,000')!==1200000) console.warn('SelfTest: parseYen comma fail'); const b = toCSV([{period:1,open:100,dep:100,monthsInt:12,acc:100,close:1,memo:'t'}]); if(!(b && b.size>0)) console.warn('SelfTest: CSV blob NG'); }catch(err){ console.error('SelfTest exception', err); }})();
