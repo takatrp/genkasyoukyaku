@@ -9,12 +9,12 @@
   :root{ --bg:#f7f8fa; --card:#ffffff; --ink:#0f172a; --muted:#475569; --line:#e5e7eb; --accent:#578899; --bar1:#bcd7ea; --bar2:#f7c8c8; --chipOnBg:#e6f0f4; --chipOnBd:#cfe0e6; --chipOnInk:#174a5a; }
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif}
   .wrap{max-width:900px;margin:0 auto;padding:12px}
-  .card{background:var(--card);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.04);padding:14px 14px 10px;border:1px solid var(--line)}
-  .header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .masthead{display:flex;align-items:center;gap:12px;margin:8px 0 12px 0}
   .logo{height:48px;width:auto;object-fit:contain}
   h1{font-size:26px;margin:0;letter-spacing:.2px}
   .chips{display:flex;gap:6px;align-items:center;margin-top:4px}
   .tag{display:inline-block;font-size:11px;background:#eef6fa;color:#195067;border:1px solid #d7e6ee;border-radius:999px;padding:2px 8px}
+  .card{background:var(--card);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.04);padding:14px 14px 10px;border:1px solid var(--line)}
   .grid{display:grid;grid-template-columns:1fr;gap:10px}
   @media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
   label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
@@ -50,12 +50,11 @@
   #m1{max-width:110px;padding:8px 10px;font-size:15px;background:#fff}
   #assetType{font-size:14px;padding:10px 10px}
   #firstUseMonth{font-size:14px;padding:10px 10px}
-  /* masthead (outside cards) */
-  .masthead{display:flex;align-items:center;gap:12px;margin:8px 0 12px 0}
 </style>
 </head>
 <body>
   <div class="wrap">
+    <!-- Masthead (カード外) -->
     <div class="masthead">
       <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener">
         <img class="logo" src="logo.jpg" onerror="this.onerror=null;this.src='ロゴ.jpg'" alt="税理士法人松本会計事務所 ロゴ"/>
@@ -68,10 +67,9 @@
         </div>
       </div>
     </div>
-    <div class="card">
-      </div>
-      </div>
 
+    <!-- 入力カード -->
+    <div class="card">
       <div class="grid">
         <div>
           <label>資産タイプ（主要科目プリセット）</label>
@@ -117,8 +115,6 @@
           </div>
         </div>
       </div>
-
-      <!-- 中古（簡便法）パラメータ -->
       <div id="usedFields" style="display:none; margin-top:6px" class="grid">
         <div>
           <label>初度・製造年月（YYYY-MM）</label>
@@ -129,7 +125,6 @@
           <input id="elapsedYears" type="number" min="0" step="0.1" placeholder="例）3" />
         </div>
       </div>
-
       <div id="usedEst" class="ok" style="display:none;margin-top:8px"></div>
       <div class="row no-print" style="margin-top:8px">
         <button class="btn" id="run">計算する</button>
@@ -137,6 +132,7 @@
       <div id="msg" style="margin-top:10px"></div>
     </div>
 
+    <!-- 結果カード -->
     <div class="card" style="margin-top:12px">
       <div class="sub">計算結果</div>
       <div id="summary" class="ok" style="display:none"></div>
@@ -157,19 +153,29 @@
       </div>
     </div>
 
+    <!-- グラフカード ＋ CSV/印刷ボタン -->
     <div class="card" style="margin-top:12px">
       <div class="sub">グラフ</div>
-      $1
+      <div class="chart-wrap">
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:var(--bar1)"></span><span>期首簿価</span></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--bar2)"></span><span>償却限度額</span></div>
+        </div>
+        <canvas id="chart" aria-label="償却グラフ"></canvas>
+      </div>
       <div class="row no-print" style="margin-top:10px">
         <button id="csvBtn">CSV</button>
         <button id="printBtn">印刷</button>
       </div>
     </div>
-        <canvas id="chart" aria-label="償却グラフ"></canvas>
-      </div>
-    </div>
 
-    $1
+    <!-- フッター（カード外） -->
+    <footer class="mk-mini">
+      © <span id="cpy-year">2025</span> <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener license">税理士法人松本会計事務所</a> ｜ 
+      <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="license noopener">CC BY-NC-SA 4.0</a> ｜ 
+      <a href="/tool-portal/terms.html" target="_blank" rel="noopener">利用条件</a> ｜ 
+      <span id="build-rev">r22</span>（<span id="last-updated-date"></span>）
+    </footer>
   </div>
 
 <script>
@@ -291,10 +297,27 @@ function init(){
 
 document.addEventListener('DOMContentLoaded', init);
 
-document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r21'; }catch(e){} });
+document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r22'; }catch(e){} });
 
 // ========= 自己テスト（UIに依存しない最小限） =========
-(function selfTest(){ try{ const rowsSL = buildSchedule({price:300000, life:5, method:'sl', m1Override:7, intangible:false}); const depsSL = rowsSL.map(r=>Math.round(r.dep)); const okSL = depsSL.length===6 && depsSL[0]===35000 && depsSL[1]===60000 && depsSL[2]===60000 && depsSL[3]===60000 && depsSL[4]===60000 && depsSL[5]===24999 && rowsSL[5].monthsInt===5; if(!okSL) console.warn('SelfTest: SL pattern mismatch', depsSL, rowsSL.map(r=>r.monthsInt)); const rowsDB = buildSchedule({price:300000, life:5, method:'db200', m1Override:7, intangible:false}); const lastRow = rowsDB[rowsDB.length-1]; if(lastRow.monthsInt!==5 || Math.round(lastRow.close)!==1){ console.warn('SelfTest: DB200 last row expected months 5 and close 1, got', lastRow.monthsInt, lastRow.close); } const rowsSoft = buildSchedule({price:120000, life:5, method:'sl', m1Override:7, intangible:true}); const lastClose = rowsSoft[rowsSoft.length-1].close; if(lastClose!==0) console.warn('SelfTest: intangible last close expected 0, got', lastClose); if(RATE200[5].rate!==0.400) console.warn('SelfTest: RATE200[5].rate expected 0.400'); if(slRate(3)!==0.334) console.warn('SelfTest: slRate(3) expected 0.334, got', slRate(3)); const b = toCSV([{period:1,open:100,dep:100,monthsInt:12,acc:100,close:1,memo:'t'}]); if(!(b && b.size>0)) console.warn('SelfTest: CSV blob NG'); }catch(err){ console.error('SelfTest exception', err); }})();
+(function selfTest(){ try{
+  // 既存ケース（変更禁止）
+  const rowsSL = buildSchedule({price:300000, life:5, method:'sl', m1Override:7, intangible:false});
+  const depsSL = rowsSL.map(r=>Math.round(r.dep));
+  const okSL = depsSL.length===6 && depsSL[0]===35000 && depsSL[1]===60000 && depsSL[2]===60000 && depsSL[3]===60000 && depsSL[4]===60000 && depsSL[5]===24999 && rowsSL[5].monthsInt===5;
+  if(!okSL) console.warn('SelfTest: SL pattern mismatch', depsSL, rowsSL.map(r=>r.monthsInt));
+  const rowsDB = buildSchedule({price:300000, life:5, method:'db200', m1Override:7, intangible:false});
+  const lastRow = rowsDB[rowsDB.length-1];
+  if(lastRow.monthsInt!==5 || Math.round(lastRow.close)!==1){ console.warn('SelfTest: DB200 last row expected months 5 and close 1, got', lastRow.monthsInt, lastRow.close); }
+  const rowsSoft = buildSchedule({price:120000, life:5, method:'sl', m1Override:7, intangible:true});
+  const lastClose = rowsSoft[rowsSoft.length-1].close; if(lastClose!==0) console.warn('SelfTest: intangible last close expected 0, got', lastClose);
+  if(RATE200[5].rate!==0.400) console.warn('SelfTest: RATE200[5].rate expected 0.400');
+  if(slRate(3)!==0.334) console.warn('SelfTest: slRate(3) expected 0.334, got', slRate(3));
+  const b = toCSV([{period:1,open:100,dep:100,monthsInt:12,acc:100,close:1,memo:'t'}]); if(!(b && b.size>0)) console.warn('SelfTest: CSV blob NG');
+  // 追加テスト：耐用3年・定額の初年度金額（12ヶ月）
+  const t3 = buildSchedule({price:250000, life:3, method:'sl', m1Override:12, intangible:false});
+  if(Math.round(t3[0].dep)!==83500){ console.warn('SelfTest: life=3 SL first-year expected 83500, got', Math.round(t3[0].dep)); }
+}catch(err){ console.error('SelfTest exception', err); }})();
 </script>
 </body>
 </html>
