@@ -174,7 +174,7 @@
       © <span id="cpy-year">2025</span> <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener license">税理士法人松本会計事務所</a> ｜ 
       <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="license noopener">CC BY-NC-SA 4.0</a> ｜ 
       <a href="/tool-portal/terms.html" target="_blank" rel="noopener">利用条件</a> ｜ 
-      <span id="build-rev">r22</span>（<span id="last-updated-date"></span>）
+      <span id="build-rev">r26</span>（<span id="last-updated-date"></span>）
     </footer>
   </div>
 
@@ -225,18 +225,63 @@ function buildSchedule({price, life, method, m1Override=null, intangible=false})
 function getRoundingMode(){ const on=document.querySelector('#roundingChips .chip-on'); return on? on.dataset.val : 'floor'; }
 function isSoftwareSelected(){ const atSel=byId('assetType'); if(!atSel) return false; const idx = Number(atSel.value||0); const it = ASSET_TYPES[idx]; return !!(it && /ソフトウェア/.test(it.label)); }
 
-function toCSV(rows){ const mode=getRoundingMode(); const header = ['期','期首帳簿価額','償却費','月数','期末帳簿価額','備考']; const lines = [header.join(',')]; const salvageDisp = isSoftwareSelected()?0:1; rows.forEach(r=>{ const o=roundByMode(r.open,mode); const d=roundByMode(r.dep,mode); let c=o-d; c = Math.max(salvageDisp, c); lines.push([r.period, o, d, r.monthsInt, c, r.memo].join(',')); }); return new Blob(["\uFEFF" + lines.join('\n')], {type:'text/csv;charset=utf-8;'}); }
+function toCSV(rows){
+  const mode=getRoundingMode();
+  const header = ['期','期首帳簿価額','償却費','月数','期末帳簿価額','備考'];
+  const lines = [header.join(',')];
+  const salvageDisp = isSoftwareSelected()?0:1;
+  if(!rows||rows.length===0){ return new Blob(["\uFEFF"+lines.join('\n')],{type:'text/csv;charset=utf-8;'}); }
+  let displayOpen = roundByMode(rows[0].open, mode);
+  const lastIdx = rows.length-1;
+  rows.forEach((r,i)=>{
+    let d = roundByMode(r.dep, mode);
+    if(i===lastIdx){
+      d = Math.max(0, displayOpen - salvageDisp); // 調整して合計一致
+    }else if(displayOpen - d < salvageDisp){
+      d = Math.max(0, displayOpen - salvageDisp); // 途中期でも下回らないよう補正
+    }
+    const c = displayOpen - d;
+    lines.push([r.period, displayOpen, d, r.monthsInt, c, r.memo].join(','));
+    displayOpen = c;
+  });
+  return new Blob(["\uFEFF" + lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+}
 
 function render(rows){
-  const mode=getRoundingMode(); const tbody = document.querySelector('#tbl tbody'); tbody.innerHTML = ''; let firstDep = rows[0]? rows[0].dep:0; const dispOpen=[]; const dispDep=[];
+  const mode=getRoundingMode();
+  const tbody = document.querySelector('#tbl tbody');
+  tbody.innerHTML = '';
+  if(!rows||rows.length===0) return;
   const salvageDisp = isSoftwareSelected()?0:1;
-  rows.forEach(r=>{ const o=roundByMode(r.open,mode); const d=roundByMode(r.dep,mode); let c=o-d; c = Math.max(salvageDisp, c); dispOpen.push(o); dispDep.push(d); const tr = document.createElement('tr'); tr.innerHTML = `<td style="text-align:left">${r.period}</td>
-      <td>¥${fmtYen(o)}</td>
+  const dispOpen=[]; const dispDep=[];
+  let displayOpen = roundByMode(rows[0].open, mode);
+  const lastIdx = rows.length-1;
+  rows.forEach((r,i)=>{
+    let d = roundByMode(r.dep, mode);
+    if(i===lastIdx){
+      d = Math.max(0, displayOpen - salvageDisp);
+    }else if(displayOpen - d < salvageDisp){
+      d = Math.max(0, displayOpen - salvageDisp);
+    }
+    const c = displayOpen - d;
+    dispOpen.push(displayOpen); dispDep.push(d);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td style="text-align:left">${r.period}</td>
+      <td>¥${fmtYen(displayOpen)}</td>
       <td><strong>¥${fmtYen(d)}</strong></td>
       <td>${r.monthsInt}</td>
       <td>¥${fmtYen(c)}</td>
-      <td style="text-align:left;color:#334155">${r.memo||''}</td>`; tbody.appendChild(tr); });
-  const sum = dispDep.reduce((s,x)=>s+x,0); const box=document.getElementById('summary'); box.textContent=`初年度償却費：¥${fmtYen(roundByMode(firstDep,mode))} ／ 総償却費：¥${fmtYen(sum)}（端数:${mode}）`; box.style.display='block'; lastRows = rows; lastDisp = {open:dispOpen, dep:dispDep}; renderChart(); }
+      <td style="text-align:left;color:#334155">${r.memo||''}</td>`;
+    tbody.appendChild(tr);
+    displayOpen = c;
+  });
+  const sum = dispDep.reduce((s,x)=>s+x,0);
+  const box=document.getElementById('summary');
+  box.textContent=`初年度償却費：¥${fmtYen(dispDep[0]||0)} ／ 総償却費：¥${fmtYen(sum)}（端数:${mode}）`;
+  box.style.display='block';
+  lastRows = rows; lastDisp = {open:dispOpen, dep:dispDep};
+  renderChart();
+}
 
 // ====== グラフ描画（Canvas 2D） ======
 let lastRows = []; let lastDisp={open:[],dep:[]};
@@ -297,7 +342,7 @@ function init(){
 
 document.addEventListener('DOMContentLoaded', init);
 
-document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r22'; }catch(e){} });
+document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r26'; }catch(e){} });
 
 // ========= 自己テスト（UIに依存しない最小限） =========
 (function selfTest(){ try{
@@ -317,6 +362,10 @@ document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getF
   // 追加テスト：耐用3年・定額の初年度金額（12ヶ月）
   const t3 = buildSchedule({price:250000, life:3, method:'sl', m1Override:12, intangible:false});
   if(Math.round(t3[0].dep)!==83500){ console.warn('SelfTest: life=3 SL first-year expected 83500, got', Math.round(t3[0].dep)); }
+  // 追加テスト：500万・5年・初年度4ヶ月・定率法の丸め整合
+  const rowsDB2 = buildSchedule({price:5000000, life:5, method:'db200', m1Override:4, intangible:false});
+  let openD = Math.floor(rowsDB2[0].open); let tot=0; const salvage=1; for(let i=0;i<rowsDB2.length;i++){ let d=Math.floor(rowsDB2[i].dep); if(i===rowsDB2.length-1){ d=Math.max(0, openD - salvage);} else if(openD - d < salvage){ d=Math.max(0, openD - salvage);} tot+=d; openD-=d; }
+  if(!(tot===4999999 && openD===1)){ console.warn('SelfTest: DB200 rounding reconciliation NG', {tot, openD}); }
 }catch(err){ console.error('SelfTest exception', err); }})();
 </script>
 </body>
