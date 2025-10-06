@@ -42,7 +42,7 @@
   @media print{ body{background:#fff} .no-print{display:none !important} .card{box-shadow:none;border:0} .scroll-x{overflow:visible;border:0} th{position:static} }
   /* chips */
   .chipbar{display:flex;gap:6px;align-items:center;flex-wrap:nowrap}
-  .chip{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;background:#fff;cursor:pointer;user-select:none;white-space:nowrap}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;background:#fff;cursor:pointer;user-select:none;white-space:nowrap;color:var(--ink);-webkit-text-fill-color:var(--ink);appearance:none;-webkit-appearance:none}
   .chip-on{background:var(--chipOnBg);border-color:var(--chipOnBd);color:var(--chipOnInk)}
   .chip-disabled{opacity:.5;pointer-events:none}
   /* compact fields */
@@ -50,6 +50,9 @@
   #m1{max-width:110px;padding:8px 10px;font-size:15px;background:#fff}
   #assetType{font-size:14px;padding:10px 10px}
   #firstUseMonth{font-size:14px;padding:10px 10px}
+  /* stronger button for print */
+  .btn-strong{background:#3d6b7c}
+  .btn-strong:hover{filter:brightness(.98)}
 </style>
 </head>
 <body>
@@ -156,17 +159,11 @@
     <!-- グラフカード ＋ CSV/印刷ボタン -->
     <div class="card" style="margin-top:12px">
       <div class="sub">グラフ</div>
-      <div class="chart-wrap">
-        <div class="legend">
-          <div class="legend-item"><span class="swatch" style="background:var(--bar1)"></span><span>期首簿価</span></div>
-          <div class="legend-item"><span class="swatch" style="background:var(--bar2)"></span><span>償却限度額</span></div>
-        </div>
-        <canvas id="chart" aria-label="償却グラフ"></canvas>
-      </div>
-      <div class="row no-print" style="margin-top:10px">
-        <button id="csvBtn">CSV</button>
-        <button id="printBtn">印刷</button>
-      </div>
+      $1
+    </div>
+    <div class="row no-print" id="exportRow" style="margin-top:10px;gap:10px">
+      <button id="csvBtn">CSV</button>
+      <button id="printBtn" class="btn btn-strong">印刷</button>
     </div>
 
     <!-- フッター（カード外） -->
@@ -174,7 +171,7 @@
       © <span id="cpy-year">2025</span> <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener license">税理士法人松本会計事務所</a> ｜ 
       <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="license noopener">CC BY-NC-SA 4.0</a> ｜ 
       <a href="/tool-portal/terms.html" target="_blank" rel="noopener">利用条件</a> ｜ 
-      <span id="build-rev">r26</span>（<span id="last-updated-date"></span>）
+      <span id="build-rev">r27</span>（<span id="last-updated-date"></span>）
     </footer>
   </div>
 
@@ -342,7 +339,7 @@ function init(){
 
 document.addEventListener('DOMContentLoaded', init);
 
-document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r26'; }catch(e){} });
+document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r27'; }catch(e){} });
 
 // ========= 自己テスト（UIに依存しない最小限） =========
 (function selfTest(){ try{
