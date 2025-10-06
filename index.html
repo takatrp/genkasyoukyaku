@@ -53,6 +53,9 @@
   /* stronger button for print */
   .btn-strong{background:var(--chipOnBg);color:var(--chipOnInk);border:1px solid var(--chipOnBd)}
   .btn-strong:hover{filter:brightness(.98)}
+  /* runline adjustments: smaller button, single-line layout */
+  .runline{display:flex;align-items:flex-start;gap:8px;flex-wrap:nowrap}
+  .runline .btn{width:auto;padding:8px 10px;font-size:14px;border-radius:10px;min-width:110px}
 </style>
 </head>
 <body>
@@ -65,9 +68,7 @@
       <div>
         <h1>減価償却費 試算ツール</h1>
         <div class="chips">
-          <span class="tag">率表内蔵</span>
-          <span class="tag">プリセット</span>
-        </div>
+          <span class="tag">率表内蔵</span></div>
       </div>
     </div>
 
@@ -129,8 +130,12 @@
         </div>
       </div>
       <div id="usedEst" class="ok" style="display:none;margin-top:8px"></div>
-      <div class="row no-print" style="margin-top:8px">
-        <button class="btn" id="run">計算する</button>
+      <div class="row no-print runline" style="margin-top:8px; display:flex; align-items:flex-start; gap:8px; flex-wrap:nowrap">
+        <button class="btn" id="run" style="flex:0 0 auto;">計算する</button>
+        <div class="small law-note" style="color:var(--muted); line-height:1.3; text-align:right; flex:1; min-width:220px;">
+          <div>定額法：平成19年4月1日以後取得分</div>
+          <div>定率法：平成24年4月1日以後取得分</div>
+        </div>
       </div>
       <div id="msg" style="margin-top:10px"></div>
     </div>
@@ -177,7 +182,7 @@
       © <span id="cpy-year">2025</span> <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener license">税理士法人松本会計事務所</a> ｜ 
       <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="license noopener">CC BY-NC-SA 4.0</a> ｜ 
       <a href="/tool-portal/terms.html" target="_blank" rel="noopener">利用条件</a> ｜ 
-      <span id="build-rev">r28</span>（<span id="last-updated-date"></span>）
+      <span id="build-rev">r32</span>（<span id="last-updated-date"></span>）
     </footer>
   </div>
 
@@ -345,7 +350,7 @@ function init(){
 
 document.addEventListener('DOMContentLoaded', init);
 
-document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r28'; }catch(e){} });
+document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r32'; }catch(e){} });
 
 // ========= 自己テスト（UIに依存しない最小限） =========
 (function selfTest(){ try{
