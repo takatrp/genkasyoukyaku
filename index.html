@@ -68,7 +68,8 @@
       <div>
         <h1>減価償却費 試算ツール</h1>
         <div class="chips">
-          <span class="tag">率表内蔵</span></div>
+          <span class="tag">率表内蔵</span>
+        </div>
       </div>
     </div>
 
@@ -150,7 +151,8 @@
             <tr>
               <th>期</th>
               <th>期首帳簿価額</th>
-              <th>償却費</th>
+              <th>償却費（年）</th>
+              <th>償却費（月）</th>
               <th>月数</th>
               <th>期末帳簿価額</th>
               <th>備考</th>
@@ -161,7 +163,7 @@
       </div>
     </div>
 
-    <!-- グラフカード ＋ CSV/印刷ボタン -->
+    <!-- グラフカード -->
     <div class="card" style="margin-top:12px">
       <div class="sub">グラフ</div>
       <div class="chart-wrap">
@@ -172,6 +174,7 @@
         <canvas id="chart" aria-label="償却グラフ"></canvas>
       </div>
     </div>
+    <!-- CSV/印刷ボタン（カード外） -->
     <div class="row no-print" id="exportRow" style="margin-top:10px;gap:10px">
       <button id="csvBtn">CSV</button>
       <button id="printBtn" class="btn btn-strong">印刷</button>
@@ -182,7 +185,7 @@
       © <span id="cpy-year">2025</span> <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener license">税理士法人松本会計事務所</a> ｜ 
       <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="license noopener">CC BY-NC-SA 4.0</a> ｜ 
       <a href="/tool-portal/terms.html" target="_blank" rel="noopener">利用条件</a> ｜ 
-      <span id="build-rev">r32</span>（<span id="last-updated-date"></span>）
+      <span id="build-rev">r36</span>（<span id="last-updated-date"></span>）
     </footer>
   </div>
 
@@ -204,27 +207,71 @@ const roundByMode=(n,mode)=>{ if(!Number.isFinite(n)) return n; if(mode==='floor
 const monthsSchedule=(m1,years)=>{ if(m1>=12) return Array.from({length:years},()=>12); const tail=12-m1; return [m1, ...Array.from({length:years-1},()=>12), tail]; };
 
 // ===== 中古資産（簡便法）ユーティリティ =====
-function usedLifeSimplified(baseLife, elapsedYears){ const N = Math.max(1, baseLife|0); const E = Math.max(0, Math.floor(elapsedYears)); let L = 0; if(E >= N){ L = Math.floor(N * 0.2); } else { L = Math.floor((N - E) + E * 0.2); } if(L < 2) L = 2; return L; }
-function formatUsedDetail(N, E, L){ if(!(Number.isFinite(N)&&Number.isFinite(E)&&Number.isFinite(L))) return ''; if(E >= N){ const raw = N*0.2; const flo = Math.floor(raw); const minApplied = L>flo ? ' → 下限2年適用' : ''; return `${N}*0.2=${raw.toFixed(1)} → 切捨て${flo}年${minApplied}`; } else { const a = (N-E); const b = 0.2*E; const sum = a + b; const flo = Math.floor(sum); const minApplied = L>flo ? ' → 下限2年適用' : ''; return `(${N}-${E}) + 0.2*${E} = ${a.toFixed(0)} + ${b.toFixed(1)} = ${sum.toFixed(1)} → 切捨て${flo}年${minApplied}`; } }
+function usedLifeSimplified(baseLife, elapsedYears){
+  const N = Math.max(1, baseLife|0);
+  const E = Math.max(0, Math.floor(elapsedYears));
+  let L = 0;
+  if(E >= N){
+    L = Math.floor(N * 0.2);
+  } else {
+    L = Math.floor((N - E) + E * 0.2);
+  }
+  if(L < 2) L = 2;
+  return L;
+}
+function formatUsedDetail(N, E, L){
+  if(!(Number.isFinite(N)&&Number.isFinite(E)&&Number.isFinite(L))) return '';
+  if(E >= N){
+    const raw = N*0.2; const flo = Math.floor(raw);
+    const minApplied = L>flo ? ' → 下限2年適用' : '';
+    return `${N}*0.2=${raw.toFixed(1)} → 切捨て${flo}年${minApplied}`;
+  } else {
+    const a = (N-E); const b = 0.2*E; const sum = a + b; const flo = Math.floor(sum);
+    const minApplied = L>flo ? ' → 下限2年適用' : '';
+    return `(${N}-${E}) + 0.2*${E} = ${a.toFixed(0)} + ${b.toFixed(1)} = ${sum.toFixed(1)} → 切捨て${flo}年${minApplied}`;
+  }
+}
 
+// ===== スケジュール生成 =====
 function buildSchedule({price, life, method, m1Override=null, intangible=false}){
-  const rows=[]; 
+  const rows=[];
   const m1 = (Number.isFinite(m1Override) && m1Override>0 && m1Override<=12) ? Math.floor(m1Override) : 12;
-  const years = Math.max(1, life|0); 
+  const years = Math.max(1, life|0);
   const monthsArr = monthsSchedule(m1, years);
   let open = price; let acc=0;
   if(method==='sl'){
     const rate = slRate(years); const annual = price*rate; const salvage = intangible ? 0 : 1;
-    for(let i=0;i<monthsArr.length;i++){ const months = monthsArr[i]; let dep = Math.min(annual*(months/12), Math.max(0, open - salvage)); acc += dep; const close = Math.max(salvage, open - dep); rows.push({period:i+1, open, dep, monthsInt:months, acc, close, memo:`定額法（率:${rate.toFixed(3)}${i===monthsArr.length-1? '・最終補完':''}）`}); open = close; }
+    for(let i=0;i<monthsArr.length;i++){
+      const months = monthsArr[i];
+      let dep = Math.min(annual*(months/12), Math.max(0, open - salvage));
+      acc += dep;
+      const close = Math.max(salvage, open - dep);
+      rows.push({period:i+1, open, dep, monthsInt:months, acc, close, memo:`定額法（率:${rate.toFixed(3)}${i===monthsArr.length-1? '・最終補完':''}）`});
+      open = close;
+    }
     return rows;
   }
   if(method==='db200'){
-    const rInfo = RATE200[years] || {rate: 2/years, revised: 1/Math.max(1,years), guarantee: 0}; const rate = rInfo.rate; const gRate = rInfo.guarantee; const fixRate = rInfo.revised; const salvage = 1; let switched=false; let revisedBase=null;
+    const rInfo = RATE200[years] || {rate: 2/years, revised: 1/Math.max(1,years), guarantee: 0};
+    const rate = rInfo.rate; const gRate = rInfo.guarantee; const fixRate = rInfo.revised; const salvage = 1;
+    let switched=false; let revisedBase=null;
     for(let i=0;i<monthsArr.length;i++){
-      const months = monthsArr[i]; if(!switched){ const dbAmt = open * rate * (months/12); const gAmt  = price * gRate * (months/12); if(dbAmt < gAmt){ switched = true; revisedBase = open; } }
-      let dep=0; let memo=''; if(switched){ dep = revisedBase * fixRate * (months/12); memo = '改定償却率（毎年同額）'; } else { dep = open * rate * (months/12); memo = '定率法（200%）'; }
+      const months = monthsArr[i];
+      if(!switched){
+        const dbAmt = open * rate * (months/12);
+        const gAmt  = price * gRate * (months/12);
+        if(dbAmt < gAmt){ switched = true; revisedBase = open; }
+      }
+      let dep=0; let memo='';
+      if(switched){ dep = revisedBase * fixRate * (months/12); memo = '改定償却率（毎年同額）'; }
+      else { dep = open * rate * (months/12); memo = '定率法（200%）'; }
       if(i===monthsArr.length-1){ dep = Math.min(dep, Math.max(0, open - salvage)); memo += '（最終調整）'; }
-      const close = Math.max(salvage, open - dep); const accPrev = rows.length? rows[rows.length-1].acc : 0; acc = accPrev + dep; rows.push({period:i+1, open, dep, monthsInt:months, acc, close, memo}); open = close; if(close<=salvage) break; }
+      const close = Math.max(salvage, open - dep);
+      const accPrev = rows.length? rows[rows.length-1].acc : 0; acc = accPrev + dep;
+      rows.push({period:i+1, open, dep, monthsInt:months, acc, close, memo});
+      open = close;
+      if(close<=salvage) break;
+    }
     return rows;
   }
   return rows;
@@ -233,9 +280,10 @@ function buildSchedule({price, life, method, m1Override=null, intangible=false})
 function getRoundingMode(){ const on=document.querySelector('#roundingChips .chip-on'); return on? on.dataset.val : 'floor'; }
 function isSoftwareSelected(){ const atSel=byId('assetType'); if(!atSel) return false; const idx = Number(atSel.value||0); const it = ASSET_TYPES[idx]; return !!(it && /ソフトウェア/.test(it.label)); }
 
+// ===== CSV（表示丸めと同一ロジックで整合） =====
 function toCSV(rows){
   const mode=getRoundingMode();
-  const header = ['期','期首帳簿価額','償却費','月数','期末帳簿価額','備考'];
+  const header = ['期','期首帳簿価額','償却費（年）','償却費（月）','月数','期末帳簿価額','備考'];
   const lines = [header.join(',')];
   const salvageDisp = isSoftwareSelected()?0:1;
   if(!rows||rows.length===0){ return new Blob(["\uFEFF"+lines.join('\n')],{type:'text/csv;charset=utf-8;'}); }
@@ -243,18 +291,18 @@ function toCSV(rows){
   const lastIdx = rows.length-1;
   rows.forEach((r,i)=>{
     let d = roundByMode(r.dep, mode);
-    if(i===lastIdx){
-      d = Math.max(0, displayOpen - salvageDisp); // 調整して合計一致
-    }else if(displayOpen - d < salvageDisp){
-      d = Math.max(0, displayOpen - salvageDisp); // 途中期でも下回らないよう補正
-    }
+    if(i===lastIdx){ d = Math.max(0, displayOpen - salvageDisp); }
+    else if(displayOpen - d < salvageDisp){ d = Math.max(0, displayOpen - salvageDisp); }
     const c = displayOpen - d;
-    lines.push([r.period, displayOpen, d, r.monthsInt, c, r.memo].join(','));
+    const perM = r.monthsInt>0 ? roundByMode(d / r.monthsInt, mode) : 0;
+    lines.push([r.period, displayOpen, d, perM, r.monthsInt, c, r.memo].join(','));
     displayOpen = c;
   });
   return new Blob(["\uFEFF" + lines.join('\n')], {type:'text/csv;charset=utf-8;'});
 }
 
+// ===== 表示レンダリング =====
+let lastRows = []; let lastDisp={open:[],dep:[]};
 function render(rows){
   const mode=getRoundingMode();
   const tbody = document.querySelector('#tbl tbody');
@@ -266,17 +314,16 @@ function render(rows){
   const lastIdx = rows.length-1;
   rows.forEach((r,i)=>{
     let d = roundByMode(r.dep, mode);
-    if(i===lastIdx){
-      d = Math.max(0, displayOpen - salvageDisp);
-    }else if(displayOpen - d < salvageDisp){
-      d = Math.max(0, displayOpen - salvageDisp);
-    }
+    if(i===lastIdx){ d = Math.max(0, displayOpen - salvageDisp); }
+    else if(displayOpen - d < salvageDisp){ d = Math.max(0, displayOpen - salvageDisp); }
     const c = displayOpen - d;
     dispOpen.push(displayOpen); dispDep.push(d);
     const tr = document.createElement('tr');
+    const perM = r.monthsInt>0 ? roundByMode(d / r.monthsInt, mode) : 0;
     tr.innerHTML = `<td style="text-align:left">${r.period}</td>
       <td>¥${fmtYen(displayOpen)}</td>
       <td><strong>¥${fmtYen(d)}</strong></td>
+      <td>¥${fmtYen(perM)}</td>
       <td>${r.monthsInt}</td>
       <td>¥${fmtYen(c)}</td>
       <td style="text-align:left;color:#334155">${r.memo||''}</td>`;
@@ -292,20 +339,28 @@ function render(rows){
 }
 
 // ====== グラフ描画（Canvas 2D） ======
-let lastRows = []; let lastDisp={open:[],dep:[]};
 function renderChart(){ try{ const canvas = document.getElementById('chart'); if(!canvas || !lastRows || lastRows.length===0) return; const dpr = Math.max(1, window.devicePixelRatio||1); const W = canvas.clientWidth; const H = canvas.clientHeight; if(!(W>0&&H>0)) return; canvas.width = Math.floor(W*dpr); canvas.height = Math.floor(H*dpr); const ctx = canvas.getContext('2d'); if(!ctx) return; ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr); ctx.clearRect(0,0,W,H);
   const padding = {l:50,r:16,t:12,b:40}; const plotW = W - padding.l - padding.r; const plotH = H - padding.t - padding.b; if(plotW<=0||plotH<=0) return;
   const periods = lastRows.length; const maxY = Math.max(...lastDisp.open, ...lastDisp.dep, 1);
   const segW = plotW / Math.max(1, periods);
-  const x = i => padding.l + segW*(i + 0.5); // 区画中央配置
+  const x = i => padding.l + segW*(i + 0.5); // 区画中央配置で目盛り干渉を回避
   const y = v => padding.t + (plotH*(1 - v/maxY));
   // 軸
   ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(padding.l, padding.t); ctx.lineTo(padding.l, padding.t+plotH); ctx.lineTo(padding.l+plotW, padding.t+plotH); ctx.stroke();
   // 棒
   const barW = Math.max(2, Math.min(14, segW*0.28));
-  for(let i=0;i<periods;i++){ const cx = x(i); const h1 = plotH * (lastDisp.open[i]/maxY); const h2 = plotH * (lastDisp.dep[i]/maxY); ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bar1').trim() || '#bcd7ea'; ctx.fillRect(cx - barW*1.3, padding.t + (plotH - h1), barW, h1); ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bar2').trim() || '#f7c8c8'; ctx.fillRect(cx + barW*0.3, padding.t + (plotH - h2), barW, h2); }
+  for(let i=0;i<periods;i++){
+    const cx = x(i);
+    const h1 = plotH * (lastDisp.open[i]/maxY);
+    const h2 = plotH * (lastDisp.dep[i]/maxY);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bar1').trim() || '#bcd7ea';
+    ctx.fillRect(cx - barW*1.3, padding.t + (plotH - h1), barW, h1);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bar2').trim() || '#f7c8c8';
+    ctx.fillRect(cx + barW*0.3, padding.t + (plotH - h2), barW, h2);
+  }
   // X軸ラベル
-  ctx.fillStyle='#475569'; ctx.font='11px system-ui, -apple-system, Roboto, Arial'; ctx.textAlign='center'; ctx.textBaseline='top'; for(let i=0;i<periods;i++){ const lx = x(i); ctx.fillText((i+1)+'期', lx, padding.t+plotH+6); }
+  ctx.fillStyle='#475569'; ctx.font='11px system-ui, -apple-system, Roboto, Arial'; ctx.textAlign='center'; ctx.textBaseline='top';
+  for(let i=0;i<periods;i++){ const lx = x(i); ctx.fillText((i+1)+'期', lx, padding.t+plotH+6); }
   // Y目盛
   ctx.textAlign='right'; ctx.textBaseline='middle'; const ticks = 4; for(let t=0;t<=ticks;t++){ const v = maxY * (t/ticks); const yy = y(v); ctx.fillText('¥'+fmtYen(v), padding.l-6, yy); ctx.strokeStyle='#eef2f7'; ctx.beginPath(); ctx.moveTo(padding.l, yy); ctx.lineTo(padding.l+plotW, yy); ctx.stroke(); }
 }catch(err){ console.error('chart render error', err); }}
@@ -321,15 +376,48 @@ function updateEstLife(){ const used = getUsedFlag(); const box = byId('usedEst'
 function getUsedFlag(){ const on=document.querySelector('#usedChips .chip-on'); return !!(on && on.dataset.val==='used'); }
 
 function go(){
-  const price = parseYen(valOf('price')); const baseLife  = Number(valOf('life')); const method= valOf('method'); const usedFlag = getUsedFlag(); const elapsedInputRaw = valOf('elapsedYears'); const firstUseMonthEl = byId('firstUseMonth'); const m1Val = Number(valOf('m1'));
-  const msg = byId('msg'); if(msg) msg.innerHTML=''; if(!price||isNaN(price)||price<=0){ if(msg) msg.innerHTML='<div class="warn">取得価額を入力してください。</div>'; return; } if(['sl','db200'].includes(method) && (!baseLife||isNaN(baseLife)||baseLife<=0)){ if(msg) msg.innerHTML='<div class="warn">耐用年数（年）を入力してください。</div>'; return; } if(!(Number.isFinite(m1Val) && m1Val>=1 && m1Val<=12)){ if(msg) msg.innerHTML='<div class="warn">初年度月数は1〜12の整数で入力してください。</div>'; return; }
-  let effectiveLife = baseLife; let usedNote=''; let EVal = null; if(usedFlag){ const hasElapsed = String(elapsedInputRaw).trim()!=='' && !isNaN(Number(elapsedInputRaw)); if(hasElapsed){ EVal = Math.floor(Math.max(0, Number(elapsedInputRaw))); if(firstUseMonthEl) firstUseMonthEl.value=''; } else { if(msg) msg.innerHTML='<div class="warn">中古（簡便法）を適用する場合は、「経過年数」を入力してください。</div>'; return; } effectiveLife = usedLifeSimplified(baseLife, EVal); usedNote = `中古（簡便法）: 元${baseLife}年・経過${EVal}年 → 見積耐用年数 ${effectiveLife}年`; }
-  const intangible = isSoftwareSelected(); const methodEff = intangible ? 'sl' : method; const m1Override = Math.floor(m1Val); const rows = buildSchedule({price, life:effectiveLife, method:methodEff, m1Override, intangible}); render(rows); if(usedNote){ const box=byId('summary'); if(box){ const prevText = box.textContent; const detail = formatUsedDetail(baseLife, EVal, effectiveLife); box.innerHTML = prevText + ' ／ ' + usedNote + '<br><span class="note">中古（簡便法）計算過程: ' + detail + '</span>'; } }
-  const blob = toCSV(rows); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='depreciation_schedule.csv'; const csvBtn=byId('csvBtn'); if(csvBtn) csvBtn.onclick=()=>a.click(); }
+  const price = parseYen(valOf('price'));
+  const baseLife  = Number(valOf('life'));
+  const method= valOf('method');
+  const usedFlag = getUsedFlag();
+  const elapsedInputRaw = valOf('elapsedYears');
+  const firstUseMonthEl = byId('firstUseMonth');
+  const m1Val = Number(valOf('m1'));
+  const msg = byId('msg');
+  if(msg) msg.innerHTML='';
+  if(!price||isNaN(price)||price<=0){ if(msg) msg.innerHTML='<div class="warn">取得価額を入力してください。</div>'; return; }
+  if(['sl','db200'].includes(method) && (!baseLife||isNaN(baseLife)||baseLife<=0)){
+    if(msg) msg.innerHTML='<div class="warn">耐用年数（年）を入力してください。</div>'; return; }
+  if(!(Number.isFinite(m1Val) && m1Val>=1 && m1Val<=12)){
+    if(msg) msg.innerHTML='<div class="warn">初年度月数は1〜12の整数で入力してください。</div>'; return; }
+  let effectiveLife = baseLife; let usedNote=''; let EVal = null;
+  if(usedFlag){
+    const hasElapsed = String(elapsedInputRaw).trim()!=='' && !isNaN(Number(elapsedInputRaw));
+    if(hasElapsed){ EVal = Math.floor(Math.max(0, Number(elapsedInputRaw))); if(firstUseMonthEl) firstUseMonthEl.value=''; }
+    else { if(msg) msg.innerHTML='<div class="warn">中古（簡便法）を適用する場合は、「経過年数」を入力してください。</div>'; return; }
+    effectiveLife = usedLifeSimplified(baseLife, EVal);
+    usedNote = `中古（簡便法）: 元${baseLife}年・経過${EVal}年 → 見積耐用年数 ${effectiveLife}年`;
+  }
+  const intangible = isSoftwareSelected();
+  const methodEff = intangible ? 'sl' : method;
+  const m1Override = Math.floor(m1Val);
+  const rows = buildSchedule({price, life:effectiveLife, method:methodEff, m1Override, intangible});
+  render(rows);
+  if(usedNote){ const box=byId('summary'); if(box){ const prevText = box.textContent; const detail = formatUsedDetail(baseLife, EVal, effectiveLife); box.innerHTML = prevText + ' ／ ' + usedNote + '<br><span class="note">中古（簡便法）計算過程: ' + detail + '</span>'; } }
+  const blob = toCSV(rows);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='depreciation_schedule.csv';
+  const csvBtn=byId('csvBtn'); if(csvBtn) csvBtn.onclick=()=>a.click();
+}
 
 function init(){
   // 資産タイプ
-  const atSel=byId('assetType'); if(atSel){ atSel.innerHTML=''; ASSET_TYPES.forEach((x,i)=>{ const op=document.createElement('option'); op.value=i; op.textContent=x.label + (x.life?`（${x.life}年）`:'' ); atSel.appendChild(op); }); atSel.addEventListener('change',()=>{ const v=ASSET_TYPES[Number(atSel.value)]; if(v&&v.life){ const lifeEl=byId('life'); if(lifeEl){ lifeEl.value=v.life; updateRateInfo(); } } syncSoftwareRules(); updateEstLife(); }); }
+  const atSel=byId('assetType');
+  if(atSel){
+    atSel.innerHTML='';
+    ASSET_TYPES.forEach((x,i)=>{ const op=document.createElement('option'); op.value=i; op.textContent=x.label + (x.life?`（${x.life}年）`:'' ); atSel.appendChild(op); });
+    atSel.addEventListener('change',()=>{ const v=ASSET_TYPES[Number(atSel.value)]; if(v&&v.life){ const lifeEl=byId('life'); if(lifeEl){ lifeEl.value=v.life; updateRateInfo(); } } syncSoftwareRules(); updateEstLife(); });
+  }
   // 新規/中古チップ
   document.querySelectorAll('#usedChips .chip').forEach(btn=>{ btn.addEventListener('click', ()=>{ document.querySelectorAll('#usedChips .chip').forEach(b=>b.classList.remove('chip-on')); btn.classList.add('chip-on'); const uf=byId('usedFields'); if(uf) uf.style.display = getUsedFlag()? '' : 'none'; updateEstLife(); }); });
   // 金額のリアルタイム・カンマ付与
@@ -339,18 +427,20 @@ function init(){
   // 依存入力
   const lifeEl=byId('life'); if(lifeEl){ lifeEl.addEventListener('input', ()=>{ updateRateInfo(); updateEstLife(); }); updateRateInfo(); }
   // 方法チップ
-  document.querySelectorAll('#methodChips .chip').forEach(btn=>{ btn.addEventListener('click', ()=>{ const val=btn.dataset.val; if(isSoftwareSelected() && val==='db200') return; const sel=byId('method'); if(sel){ sel.value = val; syncMethodChips(); } }); }); syncSoftwareRules();
+  document.querySelectorAll('#methodChips .chip').forEach(btn=>{ btn.addEventListener('click', ()=>{ const val=btn.dataset.val; if(isSoftwareSelected() && val==='db200') return; const sel=byId('method'); if(sel){ sel.value = val; syncMethodChips(); } }); });
+  syncSoftwareRules();
   // 端数処理チップ
   document.querySelectorAll('#roundingChips .chip').forEach(btn=>{ btn.addEventListener('click', ()=>{ document.querySelectorAll('#roundingChips .chip').forEach(b=>b.classList.remove('chip-on')); btn.classList.add('chip-on'); if(lastRows.length) render(lastRows); }); });
   // ボタン
-  const runBtn=byId('run'); if(runBtn) runBtn.addEventListener('click', go); const printBtn=byId('printBtn'); if(printBtn) printBtn.addEventListener('click', ()=> window.print());
+  const runBtn=byId('run'); if(runBtn) runBtn.addEventListener('click', go);
+  const printBtn=byId('printBtn'); if(printBtn) printBtn.addEventListener('click', ()=> window.print());
   // 初期チップ同期
   syncMethodChips();
 }
 
 document.addEventListener('DOMContentLoaded', init);
 
-document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r32'; }catch(e){} });
+document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r36'; }catch(e){} });
 
 // ========= 自己テスト（UIに依存しない最小限） =========
 (function selfTest(){ try{
