@@ -29,6 +29,8 @@
   th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right}
   th{position:sticky;top:0;background:#f0f5f7;color:#0b2230;text-align:right;font-size:12px;white-space:nowrap}
   th:first-child,td:first-child{text-align:left}
+  /* 備考ヘッダーを左寄せ */
+  #tbl th:last-child{ text-align:left }
   .scroll-x{overflow-x:auto;border-radius:12px;border:1px solid var(--line)}
   .chart-wrap{position:relative;height:280px}
   canvas#chart{width:100%;height:100%;display:block}
@@ -56,6 +58,8 @@
   /* runline adjustments: smaller button, single-line layout */
   .runline{display:flex;align-items:flex-start;gap:8px;flex-wrap:nowrap}
   .runline .btn{width:auto;padding:8px 10px;font-size:14px;border-radius:10px;min-width:110px}
+  /* 備考列は中央寄せ */
+  #tbl th:last-child,#tbl td:last-child{ text-align:center }
 </style>
 </head>
 <body>
@@ -185,7 +189,7 @@
       © <span id="cpy-year">2025</span> <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener license">税理士法人松本会計事務所</a> ｜ 
       <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="license noopener">CC BY-NC-SA 4.0</a> ｜ 
       <a href="/tool-portal/terms.html" target="_blank" rel="noopener">利用条件</a> ｜ 
-      <span id="build-rev">r36</span>（<span id="last-updated-date"></span>）
+      <span id="build-rev">r38</span>（<span id="last-updated-date"></span>）
     </footer>
   </div>
 
@@ -326,7 +330,7 @@ function render(rows){
       <td>¥${fmtYen(perM)}</td>
       <td>${r.monthsInt}</td>
       <td>¥${fmtYen(c)}</td>
-      <td style="text-align:left;color:#334155">${r.memo||''}</td>`;
+      <td style="text-align:center;color:#334155">${r.memo||''}</td>`;
     tbody.appendChild(tr);
     displayOpen = c;
   });
@@ -440,7 +444,7 @@ function init(){
 
 document.addEventListener('DOMContentLoaded', init);
 
-document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r36'; }catch(e){} });
+document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r38'; }catch(e){} });
 
 // ========= 自己テスト（UIに依存しない最小限） =========
 (function selfTest(){ try{
