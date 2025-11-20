@@ -1,4 +1,7 @@
 <!doctype html>
+<!-- internal version: r39
+  - 左上ロゴのリンク先をツールポータルに変更
+-->
 <html lang="ja">
 <head>
 <meta charset="UTF-8" />
@@ -7,7 +10,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="favicon192192.png" />
 <style>
   :root{ --bg:#f7f8fa; --card:#ffffff; --ink:#0f172a; --muted:#475569; --line:#e5e7eb; --accent:#578899; --bar1:#bcd7ea; --bar2:#f7c8c8; --chipOnBg:#e6f0f4; --chipOnBd:#cfe0e6; --chipOnInk:#174a5a; }
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif}
   .wrap{max-width:900px;margin:0 auto;padding:12px}
   .masthead{display:flex;align-items:center;gap:12px;margin:8px 0 12px 0}
   .logo{height:48px;width:auto;object-fit:contain}
@@ -66,7 +69,7 @@
   <div class="wrap">
     <!-- Masthead (カード外) -->
     <div class="masthead">
-      <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener">
+      <a href="https://takatrp.github.io/tool-portal/" target="_blank" rel="noopener">
         <img class="logo" src="logo.jpg" onerror="this.onerror=null;this.src='ロゴ.jpg'" alt="税理士法人松本会計事務所 ロゴ"/>
       </a>
       <div>
@@ -189,7 +192,7 @@
       © <span id="cpy-year">2025</span> <a href="https://www.matsumoto-kaikei.or.jp/" target="_blank" rel="noopener license">税理士法人松本会計事務所</a> ｜ 
       <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="license noopener">CC BY-NC-SA 4.0</a> ｜ 
       <a href="/tool-portal/terms.html" target="_blank" rel="noopener">利用条件</a> ｜ 
-      <span id="build-rev">r38</span>（<span id="last-updated-date"></span>）
+      <span id="build-rev">r39</span>（<span id="last-updated-date"></span>）
     </footer>
   </div>
 
@@ -444,7 +447,7 @@ function init(){
 
 document.addEventListener('DOMContentLoaded', init);
 
-document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r38'; }catch(e){} });
+document.addEventListener('DOMContentLoaded', ()=>{ try{ const y=new Date().getFullYear(); const lm=new Date(document.lastModified); const d=[lm.getFullYear(), String(lm.getMonth()+1).padStart(2,'0'), String(lm.getDate()).padStart(2,'0')].join('-'); const yEl=byId('cpy-year'); if(yEl) yEl.textContent=String(y); const dEl=byId('last-updated-date'); if(dEl) dEl.textContent=d; const rEl=byId('build-rev'); if(rEl) rEl.textContent='r39'; }catch(e){} });
 
 // ========= 自己テスト（UIに依存しない最小限） =========
 (function selfTest(){ try{
